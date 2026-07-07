@@ -8,8 +8,8 @@ class FileStorage:
         self.upload_dir = upload_dir
         self.upload_dir.mkdir(parents=True, exist_ok=True)
 
-    async def save(self, file: UploadFile) -> Path:
-        save_path = self.upload_dir / file.filename
+    async def save(self, file: UploadFile, filename: str) -> Path:
+        save_path = self.upload_dir / filename
 
         contents = await file.read()
         save_path.write_bytes(contents)
