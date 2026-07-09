@@ -4,13 +4,15 @@ from uuid import uuid4
 from fastapi import UploadFile
 
 from sentinel.models.image import ImageMetadata
-from sentinel.storage.file_storage import FileStorage
+from sentinel.storage.file_store import FileStore
+from sentinel.storage.image_store import ImageStore
 from sentinel.vision.vlm_client import VLMClient
 
 
 class ImageService:
-    def __init__(self, storage: FileStorage, vlm: VLMClient):
-        self.storage = storage
+    def __init__(self, file_store: FileStore, image_store: ImageStore, vlm: VLMClient):
+        self.file_store = file_store
+        self.image_store = image_store
         self.vlm = vlm
 
     async def ingest_image(self, image: UploadFile) -> ImageMetadata:
@@ -19,13 +21,19 @@ class ImageService:
         suffix = Path(image.filename).suffix
         stored_filename = f"{image_id}{suffix}"
 
-        path = await self.storage.save(file=image, filename=stored_filename)
+        path = await self.file_store.save(file=image, filename=stored_filename)
 
-        caption = self.vlm.caption_image(path)
+        # placeholder caption for development
+        # caption = self.vlm.caption_image(path)
+        caption = "This is a caption."
 
-        return ImageMetadata(
+        metadata = ImageMetadata(
             id=image_id,
             original_filename=image.filename,
             stored_filename=stored_filename,
             caption=caption,
         )
+
+        self.image_store.save(metadata)
+
+        return metadata

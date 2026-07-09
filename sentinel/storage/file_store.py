@@ -3,7 +3,7 @@ from pathlib import Path
 from fastapi import UploadFile
 
 
-class FileStorage:
+class FileStore:
     def __init__(self, upload_dir: Path) -> None:
         self.upload_dir = upload_dir
         self.upload_dir.mkdir(parents=True, exist_ok=True)
