@@ -1,4 +1,6 @@
 from uuid import UUID
+
+from sqlalchemy import select
 from sentinel.database.models.image_record import ImageRecord
 from sentinel.database.session import SessionFactory
 from sentinel.models.image import ImageMetadata
@@ -20,6 +22,11 @@ class ImageStore:
                 return None
 
             return self._to_metadata(record)
+
+    def list(self) -> list[ImageMetadata]:
+        with SessionFactory() as session:
+            records = session.scalars(select(ImageRecord)).all()
+            return [self._to_metadata(record) for record in records]
 
     def _to_record(self, metadata: ImageMetadata) -> ImageRecord:
         return ImageRecord(

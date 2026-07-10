@@ -22,6 +22,11 @@ async def upload_image(image: UploadFile) -> ImageMetadata:
     return await image_service.ingest(image)
 
 
+@router.get("")
+def list_images() -> list[ImageMetadata]:
+    return image_service.list()
+
+
 @router.get("/{image_id}")
 def get_image(image_id: UUID) -> ImageMetadata | None:
     return image_service.get(image_id)

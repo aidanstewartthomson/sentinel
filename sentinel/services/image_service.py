@@ -40,3 +40,6 @@ class ImageService:
 
     def get(self, image_id: UUID) -> ImageMetadata:
         return self.image_store.get(image_id)
+
+    def list(self) -> list[ImageMetadata]:
+        return self.image_store.list()
