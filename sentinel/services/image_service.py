@@ -1,5 +1,5 @@
 from pathlib import Path
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from fastapi import UploadFile
 
@@ -15,7 +15,7 @@ class ImageService:
         self.image_store = image_store
         self.vlm = vlm
 
-    async def ingest_image(self, image: UploadFile) -> ImageMetadata:
+    async def ingest(self, image: UploadFile) -> ImageMetadata:
         image_id = uuid4()
 
         suffix = Path(image.filename).suffix
@@ -37,3 +37,6 @@ class ImageService:
         self.image_store.save(metadata)
 
         return metadata
+
+    def get(self, image_id: UUID) -> ImageMetadata:
+        return self.image_store.get(image_id)
