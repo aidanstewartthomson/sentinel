@@ -1,65 +1,164 @@
-import Image from "next/image";
+// import Image from "next/image";
 
-export default function Home() {
+import { AppSidebar } from "@/components/app-sidebar";
+import { UploadButton } from "@/components/upload-button";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Separator } from "@/components/ui/separator";
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  DownloadIcon,
+  EllipsisIcon,
+  PencilIcon,
+  Trash2Icon,
+} from "lucide-react";
+import { listImages } from "@/lib/api/images.server";
+
+export default async function Home() {
+  const images = await listImages();
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <SidebarProvider>
+      <AppSidebar />
+      <SidebarInset className="min-w-0 overflow-x-hidden">
+        <header className="flex h-14 min-w-0 shrink-0 items-center border-b bg-background">
+          <div className="mx-auto flex w-full max-w-7xl min-w-0 items-center px-4 sm:px-6 lg:px-8">
+            <div className="flex min-w-0 items-center gap-2">
+              <SidebarTrigger className="-ml-1" />
+              <Separator
+                orientation="vertical"
+                className="mr-2 data-vertical:h-4 data-vertical:self-auto"
+              />
+              <span className="truncate text-sm font-medium">Library</span>
+            </div>
+          </div>
+        </header>
+
+        <main className="flex min-w-0 flex-1 flex-col bg-muted/20">
+          <div className="mx-auto flex w-full max-w-7xl min-w-0 flex-1 flex-col gap-7 px-4 py-8 sm:px-6 lg:px-8">
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight">Library</h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Browse and manage images available to Sentinel.
+              </p>
+            </div>
+
+            <section className="min-w-0" aria-labelledby="library-heading">
+              <div className="mb-4 flex items-center justify-between gap-4">
+                <h2
+                  id="library-heading"
+                  className="truncate text-sm font-medium"
+                >
+                  {images.length} images
+                </h2>
+                <UploadButton />
+              </div>
+
+              <div className="min-w-0 overflow-hidden rounded-xl border bg-card shadow-xs">
+                <Table className="table-fixed">
+                  <TableCaption className="sr-only">
+                    Images available to Sentinel
+                  </TableCaption>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="h-11 pr-3 pl-4">Name</TableHead>
+                      <TableHead className="hidden h-11 w-28 px-3 md:table-cell">
+                        Date added
+                      </TableHead>
+                      <TableHead className="h-11 w-24 px-3">Size</TableHead>
+                      <TableHead className="h-11 w-14 pr-4">
+                        <span className="sr-only">Actions</span>
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {images.map((image) => (
+                      <TableRow key={image.id}>
+                        <TableCell className="min-w-0 py-3 pr-3 pl-4">
+                          <div className="flex min-w-0 items-center gap-3">
+                            {/* <div className="relative size-9 shrink-0 overflow-hidden rounded-md border bg-muted">
+                              <Image
+                                src=""
+                                alt={image.caption}
+                                fill
+                                sizes="36px"
+                                className="object-cover"
+                              />
+                            </div> */}
+                            <span
+                              className="min-w-0 truncate font-medium"
+                              title={image.original_filename}
+                            >
+                              {image.original_filename}
+                            </span>
+                          </div>
+                        </TableCell>
+                        {/* placeholder */}
+                        <TableCell className="hidden w-28 px-3 py-3 text-muted-foreground md:table-cell">
+                          11 Jul
+                        </TableCell>
+                        {/* placeholder */}
+                        <TableCell className="w-24 px-3 py-3 text-muted-foreground">
+                          100 MB
+                        </TableCell>
+                        <TableCell className="w-14 py-3 pr-4 text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger
+                              render={
+                                <Button
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  aria-label={`Actions for ${image.original_filename}`}
+                                />
+                              }
+                            >
+                              <EllipsisIcon />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-36">
+                              <DropdownMenuItem>
+                                <PencilIcon />
+                                Rename
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                <DownloadIcon />
+                                Download
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem variant="destructive">
+                                <Trash2Icon />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </section>
+          </div>
+        </main>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }
