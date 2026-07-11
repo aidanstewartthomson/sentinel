@@ -6,7 +6,7 @@ from sentinel.database.session import SessionFactory
 from sentinel.models.image import ImageMetadata
 
 
-class ImageStore:
+class MetadataStore:
     def save(self, metadata: ImageMetadata) -> None:
         record = self._to_record(metadata)
 
@@ -34,6 +34,8 @@ class ImageStore:
             original_filename=metadata.original_filename,
             stored_filename=metadata.stored_filename,
             caption=metadata.caption,
+            created_at=metadata.created_at,
+            size_bytes=metadata.size_bytes,
         )
 
     def _to_metadata(self, record: ImageRecord) -> ImageMetadata:
@@ -42,4 +44,6 @@ class ImageStore:
             original_filename=record.original_filename,
             stored_filename=record.stored_filename,
             caption=record.caption,
+            created_at=record.created_at,
+            size_bytes=record.size_bytes,
         )
