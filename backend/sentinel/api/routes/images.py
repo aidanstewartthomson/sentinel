@@ -1,5 +1,6 @@
 from uuid import UUID
 from fastapi import APIRouter, UploadFile
+from fastapi.responses import FileResponse
 
 from sentinel.core.config import MODEL_NAME, UPLOAD_DIR
 from sentinel.models.image import ImageMetadata
@@ -30,5 +31,10 @@ def list_images() -> list[ImageMetadata]:
 
 
 @router.get("/{image_id}")
-def get_image(image_id: UUID) -> ImageMetadata | None:
-    return image_service.get(image_id)
+def get_image_metadata(image_id: UUID) -> ImageMetadata | None:
+    return image_service.get_metadata(image_id)
+
+
+@router.get("/{image_id}/content")
+def get_image_content(image_id: UUID) -> FileResponse:
+    return image_service.get_content(image_id)

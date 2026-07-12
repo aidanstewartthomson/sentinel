@@ -2,7 +2,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from uuid import UUID, uuid4
 
-from fastapi import UploadFile
+from fastapi import HTTPException, UploadFile
+from fastapi.responses import FileResponse
 
 from sentinel.models.image import ImageMetadata
 from sentinel.storage.file_store import FileStore
@@ -43,8 +44,21 @@ class ImageService:
 
         return metadata
 
-    def get(self, image_id: UUID) -> ImageMetadata:
+    def get_metadata(self, image_id: UUID) -> ImageMetadata | None:
         return self.metadata_store.get(image_id)
+
+    def get_content(self, image_id: UUID) -> FileResponse:
+        metadata = self.metadata_store.get(image_id)
+
+        if metadata is None:
+            raise HTTPException(status_code=404, detail="Image not found")
+
+        path = self.file_store.get_path(metadata.stored_filename)
+
+        if not path.is_file():
+            raise HTTPException(status_code=404, detail="Image not found")
+
+        return FileResponse(path=path)
 
     def list(self) -> list[ImageMetadata]:
         return self.metadata_store.list()

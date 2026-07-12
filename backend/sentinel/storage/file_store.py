@@ -15,3 +15,6 @@ class FileStore:
         save_path.write_bytes(contents)
 
         return save_path
+
+    def get_path(self, filename: str) -> Path:
+        return self.upload_dir / filename
