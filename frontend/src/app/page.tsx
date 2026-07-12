@@ -1,15 +1,8 @@
 import Image from "next/image";
 
 import { AppSidebar } from "@/components/app-sidebar";
+import { ImageActions } from "@/components/image-actions";
 import { UploadButton } from "@/components/upload-button";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 import {
   SidebarInset,
@@ -25,12 +18,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  DownloadIcon,
-  EllipsisIcon,
-  PencilIcon,
-  Trash2Icon,
-} from "lucide-react";
 import { listImages } from "@/lib/api/images.server";
 import { formatDate, formatFileSize } from "@/lib/utils";
 
@@ -99,7 +86,7 @@ export default async function Home() {
                             <div className="relative size-9 shrink-0 overflow-hidden rounded-md border bg-muted">
                               <Image
                                 src={`/api/images/${image.id}/content`}
-                                alt={image.caption || image.original_filename}
+                                alt={image.caption || image.user_filename}
                                 width={36}
                                 height={36}
                                 sizes="36px"
@@ -109,9 +96,9 @@ export default async function Home() {
                             <div className="min-w-0">
                               <p
                                 className="truncate font-medium"
-                                title={image.original_filename}
+                                title={image.user_filename}
                               >
-                                {image.original_filename}
+                                {image.user_filename}
                               </p>
                             </div>
                           </div>
@@ -123,34 +110,10 @@ export default async function Home() {
                           {formatFileSize(image.size_bytes)}
                         </TableCell>
                         <TableCell className="w-14 py-3 pr-4 text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger
-                              render={
-                                <Button
-                                  variant="ghost"
-                                  size="icon-sm"
-                                  aria-label={`Actions for ${image.original_filename}`}
-                                />
-                              }
-                            >
-                              <EllipsisIcon />
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-36">
-                              <DropdownMenuItem>
-                                <PencilIcon />
-                                Rename
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <DownloadIcon />
-                                Download
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem variant="destructive">
-                                <Trash2Icon />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                          <ImageActions
+                            imageId={image.id}
+                            userFilename={image.user_filename}
+                          />
                         </TableCell>
                       </TableRow>
                     ))}

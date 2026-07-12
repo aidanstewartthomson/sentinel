@@ -1,6 +1,6 @@
 export type ImageMetadata = {
   id: string;
-  original_filename: string;
+  user_filename: string;
   stored_filename: string;
   caption: string;
   created_at: string;
