@@ -1,4 +1,4 @@
-// import Image from "next/image";
+import Image from "next/image";
 
 import { AppSidebar } from "@/components/app-sidebar";
 import { UploadButton } from "@/components/upload-button";
@@ -32,6 +32,7 @@ import {
   Trash2Icon,
 } from "lucide-react";
 import { listImages } from "@/lib/api/images.server";
+import { formatDate, formatFileSize } from "@/lib/utils";
 
 export default async function Home() {
   const images = await listImages();
@@ -63,7 +64,7 @@ export default async function Home() {
             </div>
 
             <section className="min-w-0" aria-labelledby="library-heading">
-              <div className="mb-4 flex items-center justify-between gap-4">
+              <div className="mb-4 flex items-end justify-between gap-4">
                 <h2
                   id="library-heading"
                   className="truncate text-sm font-medium"
@@ -82,7 +83,7 @@ export default async function Home() {
                     <TableRow>
                       <TableHead className="h-11 pr-3 pl-4">Name</TableHead>
                       <TableHead className="hidden h-11 w-28 px-3 md:table-cell">
-                        Date added
+                        Added
                       </TableHead>
                       <TableHead className="h-11 w-24 px-3">Size</TableHead>
                       <TableHead className="h-11 w-14 pr-4">
@@ -95,30 +96,31 @@ export default async function Home() {
                       <TableRow key={image.id}>
                         <TableCell className="min-w-0 py-3 pr-3 pl-4">
                           <div className="flex min-w-0 items-center gap-3">
-                            {/* <div className="relative size-9 shrink-0 overflow-hidden rounded-md border bg-muted">
+                            <div className="relative size-9 shrink-0 overflow-hidden rounded-md border bg-muted">
                               <Image
-                                src=""
-                                alt={image.caption}
-                                fill
+                                src={`/api/images/${image.id}/content`}
+                                alt={image.caption || image.original_filename}
+                                width={36}
+                                height={36}
                                 sizes="36px"
                                 className="object-cover"
                               />
-                            </div> */}
-                            <span
-                              className="min-w-0 truncate font-medium"
-                              title={image.original_filename}
-                            >
-                              {image.original_filename}
-                            </span>
+                            </div>
+                            <div className="min-w-0">
+                              <p
+                                className="truncate font-medium"
+                                title={image.original_filename}
+                              >
+                                {image.original_filename}
+                              </p>
+                            </div>
                           </div>
                         </TableCell>
-                        {/* placeholder */}
                         <TableCell className="hidden w-28 px-3 py-3 text-muted-foreground md:table-cell">
-                          11 Jul
+                          {formatDate(image.created_at)}
                         </TableCell>
-                        {/* placeholder */}
                         <TableCell className="w-24 px-3 py-3 text-muted-foreground">
-                          100 MB
+                          {formatFileSize(image.size_bytes)}
                         </TableCell>
                         <TableCell className="w-14 py-3 pr-4 text-right">
                           <DropdownMenu>
