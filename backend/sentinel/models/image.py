@@ -5,8 +5,12 @@ from pydantic import BaseModel
 
 class ImageMetadata(BaseModel):
     id: UUID
-    original_filename: str
+    user_filename: str
     stored_filename: str
     caption: str
     created_at: datetime
     size_bytes: int
+
+
+class RenameImageRequest(BaseModel):
+    filename: str

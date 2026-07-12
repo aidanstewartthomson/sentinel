@@ -8,7 +8,7 @@ class ImageRecord(Base):
     __tablename__ = "images"
 
     id: Mapped[UUID] = mapped_column(primary_key=True)
-    original_filename: Mapped[str]
+    user_filename: Mapped[str]
     stored_filename: Mapped[str]
     caption: Mapped[str]
     created_at: Mapped[datetime]

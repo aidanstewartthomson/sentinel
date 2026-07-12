@@ -3,7 +3,7 @@ from fastapi import APIRouter, UploadFile
 from fastapi.responses import FileResponse
 
 from sentinel.core.config import MODEL_NAME, UPLOAD_DIR
-from sentinel.models.image import ImageMetadata
+from sentinel.models.image import ImageMetadata, RenameImageRequest
 from sentinel.services.image_service import ImageService
 from sentinel.storage.file_store import FileStore
 from sentinel.storage.metadata_store import MetadataStore
@@ -38,3 +38,8 @@ def get_image_metadata(image_id: UUID) -> ImageMetadata | None:
 @router.get("/{image_id}/content")
 def get_image_content(image_id: UUID) -> FileResponse:
     return image_service.get_content(image_id)
+
+
+@router.patch("/{image_id}")
+def rename_image(image_id: UUID, request: RenameImageRequest) -> ImageMetadata | None:
+    return image_service.rename(image_id, request.filename)

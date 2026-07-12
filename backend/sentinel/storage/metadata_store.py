@@ -1,3 +1,4 @@
+from fileinput import filename
 from uuid import UUID
 
 from sqlalchemy import select
@@ -16,7 +17,7 @@ class MetadataStore:
 
     def get(self, image_id: UUID) -> ImageMetadata | None:
         with SessionFactory() as session:
-            record = session.get(entity=ImageRecord, ident=image_id)
+            record = session.get(ImageRecord, ident=image_id)
 
             if record is None:
                 return None
@@ -28,10 +29,22 @@ class MetadataStore:
             records = session.scalars(select(ImageRecord)).all()
             return [self._to_metadata(record) for record in records]
 
+    def rename(self, image_id: UUID, filename: str) -> ImageMetadata | None:
+        with SessionFactory() as session:
+            record = session.get(ImageRecord, ident=image_id)
+
+            if record is None:
+                return None
+
+            record.user_filename = filename
+            session.commit()
+
+            return self._to_metadata(record)
+
     def _to_record(self, metadata: ImageMetadata) -> ImageRecord:
         return ImageRecord(
             id=metadata.id,
-            original_filename=metadata.original_filename,
+            user_filename=metadata.user_filename,
             stored_filename=metadata.stored_filename,
             caption=metadata.caption,
             created_at=metadata.created_at,
@@ -41,7 +54,7 @@ class MetadataStore:
     def _to_metadata(self, record: ImageRecord) -> ImageMetadata:
         return ImageMetadata(
             id=record.id,
-            original_filename=record.original_filename,
+            user_filename=record.user_filename,
             stored_filename=record.stored_filename,
             caption=record.caption,
             created_at=record.created_at,

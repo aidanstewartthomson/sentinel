@@ -25,7 +25,7 @@ class ImageService:
         suffix = Path(image.filename).suffix
         stored_filename = f"{image_id}{suffix}"
 
-        path = await self.file_store.save(file=image, filename=stored_filename)
+        path = await self.file_store.save(image, filename=stored_filename)
 
         # placeholder caption for development
         # caption = self.vlm.caption_image(path)
@@ -33,7 +33,7 @@ class ImageService:
 
         metadata = ImageMetadata(
             id=image_id,
-            original_filename=image.filename,
+            user_filename=image.filename,
             stored_filename=stored_filename,
             caption=caption,
             created_at=datetime.now(timezone.utc),
@@ -62,3 +62,6 @@ class ImageService:
 
     def list(self) -> list[ImageMetadata]:
         return self.metadata_store.list()
+
+    def rename(self, image_id: UUID, filename: str) -> ImageMetadata:
+        return self.metadata_store.rename(image_id, filename=filename)
