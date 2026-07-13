@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { type FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   DownloadIcon,
@@ -9,7 +9,18 @@ import {
   PencilIcon,
   Trash2Icon,
 } from "lucide-react";
+import { toast } from "sonner";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -85,6 +96,9 @@ export function ImageActions({
     try {
       await renameImage(imageId, nextFilename);
       setIsRenameOpen(false);
+      toast.success("Image renamed", {
+        description: `“${userFilename}” was renamed to “${nextFilename}”.`,
+      });
       router.refresh();
     } catch {
       setError("The image could not be renamed. Please try again.");
@@ -100,6 +114,9 @@ export function ImageActions({
     try {
       await deleteImage(imageId);
       setIsDeleteOpen(false);
+      toast.success("Image deleted", {
+        description: `${userFilename} was removed from your library.`,
+      });
       router.refresh();
     } catch {
       setDeleteError("The image could not be deleted. Please try again.");
@@ -158,13 +175,13 @@ export function ImageActions({
             <DialogHeader>
               <DialogTitle>Rename image</DialogTitle>
               <DialogDescription>
-                Update how this image appears in your library.
+                Enter a new filename for this image.
               </DialogDescription>
             </DialogHeader>
 
             <div className="grid gap-4">
               <div className="grid gap-3">
-                <Label htmlFor={`filename-${imageId}`}>Filename</Label>
+                <Label htmlFor={`filename-${imageId}`}>New filename</Label>
                 <Input
                   id={`filename-${imageId}`}
                   name="filename"
@@ -204,22 +221,25 @@ export function ImageActions({
                     className="animate-spin"
                   />
                 )}
-                {isRenaming ? "Saving…" : "Save"}
+                {isRenaming ? "Saving…" : "Save changes"}
               </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isDeleteOpen} onOpenChange={handleDeleteOpenChange}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete image?</DialogTitle>
-            <DialogDescription>
-              This will permanently delete {userFilename}. This action cannot be
+      <AlertDialog open={isDeleteOpen} onOpenChange={handleDeleteOpenChange}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this image?</AlertDialogTitle>
+            <AlertDialogDescription>
+              <span className="font-medium text-foreground">
+                “{userFilename}”
+              </span>{" "}
+              will be permanently removed from your library. This can&apos;t be
               undone.
-            </DialogDescription>
-          </DialogHeader>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
 
           {deleteError && (
             <p className="text-sm text-destructive" role="alert">
@@ -227,14 +247,11 @@ export function ImageActions({
             </p>
           )}
 
-          <DialogFooter>
-            <DialogClose
-              render={<Button type="button" variant="outline" />}
-              disabled={isDeleting}
-            >
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>
               Cancel
-            </DialogClose>
-            <Button
+            </AlertDialogCancel>
+            <AlertDialogAction
               type="button"
               variant="destructive"
               onClick={handleDelete}
@@ -246,11 +263,11 @@ export function ImageActions({
                   className="animate-spin"
                 />
               )}
-              {isDeleting ? "Deleting…" : "Delete"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              {isDeleting ? "Deleting…" : "Delete image"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
