@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { renameImage } from "@/lib/api/images.client";
+import { deleteImage, renameImage } from "@/lib/api/images.client";
 
 type ImageActionsProps = {
   imageId: string;
@@ -42,9 +42,12 @@ export function ImageActions({
 }: ImageActionsProps) {
   const router = useRouter();
   const [isRenameOpen, setIsRenameOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [filename, setFilename] = useState(userFilename);
   const [isRenaming, setIsRenaming] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   function handleOpenChange(open: boolean) {
     if (open) {
@@ -53,6 +56,14 @@ export function ImageActions({
     }
 
     setIsRenameOpen(open);
+  }
+
+  function handleDeleteOpenChange(open: boolean) {
+    if (open) {
+      setDeleteError(null);
+    }
+
+    setIsDeleteOpen(open);
   }
 
   async function handleRename(event: FormEvent<HTMLFormElement>) {
@@ -75,6 +86,21 @@ export function ImageActions({
       setError("The image could not be renamed. Please try again.");
     } finally {
       setIsRenaming(false);
+    }
+  }
+
+  async function handleDelete() {
+    setIsDeleting(true);
+    setDeleteError(null);
+
+    try {
+      await deleteImage(imageId);
+      setIsDeleteOpen(false);
+      router.refresh();
+    } catch {
+      setDeleteError("The image could not be deleted. Please try again.");
+    } finally {
+      setIsDeleting(false);
     }
   }
 
@@ -105,7 +131,10 @@ export function ImageActions({
             Download
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem variant="destructive">
+          <DropdownMenuItem
+            variant="destructive"
+            onClick={() => setIsDeleteOpen(true)}
+          >
             <Trash2Icon />
             Delete
           </DropdownMenuItem>
@@ -168,6 +197,47 @@ export function ImageActions({
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isDeleteOpen} onOpenChange={handleDeleteOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete image?</DialogTitle>
+            <DialogDescription>
+              This will permanently delete {userFilename}. This action cannot be
+              undone.
+            </DialogDescription>
+          </DialogHeader>
+
+          {deleteError && (
+            <p className="text-sm text-destructive" role="alert">
+              {deleteError}
+            </p>
+          )}
+
+          <DialogFooter>
+            <DialogClose
+              render={<Button type="button" variant="outline" />}
+              disabled={isDeleting}
+            >
+              Cancel
+            </DialogClose>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting && (
+                <LoaderCircleIcon
+                  data-icon="inline-start"
+                  className="animate-spin"
+                />
+              )}
+              {isDeleting ? "Deleting…" : "Delete"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

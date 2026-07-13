@@ -26,9 +26,14 @@ export async function renameImage(
   });
 
   if (!response.ok) throw new Error("Could not rename image");
+  return response.json();
+}
 
-  const image: ImageMetadata | null = await response.json();
-  if (!image) throw new Error("Image not found");
+export async function deleteImage(imageId: string): Promise<ImageMetadata> {
+  const response = await fetch(`/api/images/${imageId}`, {
+    method: "DELETE",
+  });
 
-  return image;
+  if (!response.ok) throw new Error("Could not delete image");
+  return response.json();
 }
