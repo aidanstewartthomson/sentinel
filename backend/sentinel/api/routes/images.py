@@ -21,8 +21,8 @@ image_service = ImageService(
 
 
 @router.post("")
-async def upload_image(image: UploadFile) -> ImageMetadata:
-    return await image_service.ingest(image)
+def upload_image(image: UploadFile) -> ImageMetadata:
+    return image_service.ingest(image)
 
 
 @router.get("")

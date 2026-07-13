@@ -19,13 +19,13 @@ class ImageService:
         self.metadata_store = metadata_store
         self.vlm = vlm
 
-    async def ingest(self, image: UploadFile) -> ImageMetadata:
+    def ingest(self, image: UploadFile) -> ImageMetadata:
         image_id = uuid4()
 
         suffix = Path(image.filename).suffix
         stored_filename = f"{image_id}{suffix}"
 
-        path = await self.file_store.save(image, filename=stored_filename)
+        path = self.file_store.save(image, filename=stored_filename)
 
         # placeholder caption for development
         # caption = self.vlm.caption_image(path)
@@ -86,7 +86,7 @@ class ImageService:
 
         return metadata
 
-    def download(self, image_id: UUID) -> ImageMetadata:
+    def download(self, image_id: UUID) -> FileResponse:
         metadata = self.metadata_store.get(image_id)
 
         if metadata is None:
