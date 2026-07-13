@@ -2,18 +2,18 @@ from uuid import UUID
 from fastapi import APIRouter, UploadFile
 from fastapi.responses import FileResponse
 
-from sentinel.core.config import MODEL_NAME, UPLOAD_DIR
+from sentinel.core.config import UPLOAD_DIR
 from sentinel.models.image import ImageMetadata, RenameImageRequest
 from sentinel.services.image_service import ImageService
 from sentinel.storage.file_store import FileStore
 from sentinel.storage.metadata_store import MetadataStore
-from sentinel.vision.vlm_client import VLMClient
+from sentinel.vision.vlm_client import StubVLMClient
 
 router = APIRouter(prefix="/images")
 
 file_store = FileStore(upload_dir=UPLOAD_DIR)
 metadata_store = MetadataStore()
-vlm = VLMClient(model_name=MODEL_NAME)
+vlm = StubVLMClient()
 
 image_service = ImageService(
     file_store=file_store, metadata_store=metadata_store, vlm=vlm

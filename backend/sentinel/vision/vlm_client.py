@@ -1,7 +1,11 @@
 from pathlib import Path
-
 from PIL import Image
 from transformers import pipeline
+
+
+class StubVLMClient:
+    def caption_image(self, image_path: Path) -> str:
+        return "This is a caption."
 
 
 class VLMClient:

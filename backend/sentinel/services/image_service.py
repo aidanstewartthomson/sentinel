@@ -8,12 +8,15 @@ from fastapi.responses import FileResponse
 from sentinel.models.image import ImageMetadata
 from sentinel.storage.file_store import FileStore
 from sentinel.storage.metadata_store import MetadataStore
-from sentinel.vision.vlm_client import VLMClient
+from sentinel.vision.vlm_client import StubVLMClient, VLMClient
 
 
 class ImageService:
     def __init__(
-        self, file_store: FileStore, metadata_store: MetadataStore, vlm: VLMClient
+        self,
+        file_store: FileStore,
+        metadata_store: MetadataStore,
+        vlm: StubVLMClient | VLMClient,
     ):
         self.file_store = file_store
         self.metadata_store = metadata_store
@@ -27,9 +30,7 @@ class ImageService:
 
         path = self.file_store.save(image, filename=stored_filename)
 
-        # placeholder caption for development
-        # caption = self.vlm.caption_image(path)
-        caption = "This is a caption."
+        caption = self.vlm.caption_image(path)
 
         metadata = ImageMetadata(
             id=image_id,
