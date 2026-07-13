@@ -1,5 +1,9 @@
 import { ImageMetadata } from "../types/image";
 
+export function getImageDownloadUrl(imageId: string): string {
+  return `/api/images/${encodeURIComponent(imageId)}/download`;
+}
+
 export async function uploadImage(file: File): Promise<ImageMetadata> {
   const body = new FormData();
   body.append("image", file);

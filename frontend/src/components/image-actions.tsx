@@ -29,7 +29,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { deleteImage, renameImage } from "@/lib/api/images.client";
+import {
+  deleteImage,
+  getImageDownloadUrl,
+  renameImage,
+} from "@/lib/api/images.client";
 
 type ImageActionsProps = {
   imageId: string;
@@ -126,7 +130,14 @@ export function ImageActions({
             <PencilIcon />
             Rename
           </DropdownMenuItem>
-          <DropdownMenuItem>
+          <DropdownMenuItem
+            render={
+              <a
+                href={getImageDownloadUrl(imageId)}
+                download={userFilename}
+              />
+            }
+          >
             <DownloadIcon />
             Download
           </DropdownMenuItem>
