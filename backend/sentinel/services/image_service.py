@@ -85,3 +85,20 @@ class ImageService:
         self.file_store.delete(metadata.stored_filename)
 
         return metadata
+
+    def download(self, image_id: UUID) -> ImageMetadata:
+        metadata = self.metadata_store.get(image_id)
+
+        if metadata is None:
+            raise HTTPException(status_code=404, detail="Image not found")
+
+        path = self.file_store.get_path(metadata.stored_filename)
+
+        if not path.is_file():
+            raise HTTPException(status_code=404, detail="Image not found")
+
+        return FileResponse(
+            path=path,
+            filename=metadata.user_filename,
+            content_disposition_type="attachment",
+        )

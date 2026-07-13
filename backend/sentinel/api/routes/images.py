@@ -35,11 +35,6 @@ def get_image_metadata(image_id: UUID) -> ImageMetadata:
     return image_service.get_metadata(image_id)
 
 
-@router.get("/{image_id}/content")
-def get_image_content(image_id: UUID) -> FileResponse:
-    return image_service.get_content(image_id)
-
-
 @router.patch("/{image_id}")
 def rename_image(image_id: UUID, request: RenameImageRequest) -> ImageMetadata:
     return image_service.rename(image_id, request.filename)
@@ -48,3 +43,13 @@ def rename_image(image_id: UUID, request: RenameImageRequest) -> ImageMetadata:
 @router.delete("/{image_id}")
 def delete_image(image_id: UUID) -> ImageMetadata:
     return image_service.delete(image_id)
+
+
+@router.get("/{image_id}/content")
+def get_image_content(image_id: UUID) -> FileResponse:
+    return image_service.get_content(image_id)
+
+
+@router.get("/{image_id}/download")
+def download_image(image_id: UUID) -> FileResponse:
+    return image_service.download(image_id)
