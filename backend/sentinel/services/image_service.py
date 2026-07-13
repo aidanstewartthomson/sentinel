@@ -44,8 +44,13 @@ class ImageService:
 
         return metadata
 
-    def get_metadata(self, image_id: UUID) -> ImageMetadata | None:
-        return self.metadata_store.get(image_id)
+    def get_metadata(self, image_id: UUID) -> ImageMetadata:
+        metadata = self.metadata_store.get(image_id)
+
+        if metadata is None:
+            raise HTTPException(status_code=404, detail="Image not found")
+
+        return metadata
 
     def get_content(self, image_id: UUID) -> FileResponse:
         metadata = self.metadata_store.get(image_id)
@@ -64,4 +69,19 @@ class ImageService:
         return self.metadata_store.list()
 
     def rename(self, image_id: UUID, filename: str) -> ImageMetadata:
-        return self.metadata_store.rename(image_id, filename=filename)
+        metadata = self.metadata_store.rename(image_id, filename=filename)
+
+        if metadata is None:
+            raise HTTPException(status_code=404, detail="Image not found")
+
+        return metadata
+
+    def delete(self, image_id: UUID) -> ImageMetadata:
+        metadata = self.metadata_store.delete(image_id)
+
+        if metadata is None:
+            raise HTTPException(status_code=404, detail="Image not found")
+
+        self.file_store.delete(metadata.stored_filename)
+
+        return metadata

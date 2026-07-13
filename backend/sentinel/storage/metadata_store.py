@@ -1,4 +1,3 @@
-from fileinput import filename
 from uuid import UUID
 
 from sqlalchemy import select
@@ -37,6 +36,18 @@ class MetadataStore:
                 return None
 
             record.user_filename = filename
+            session.commit()
+
+            return self._to_metadata(record)
+
+    def delete(self, image_id: UUID) -> ImageMetadata | None:
+        with SessionFactory() as session:
+            record = session.get(ImageRecord, ident=image_id)
+
+            if record is None:
+                return None
+
+            session.delete(record)
             session.commit()
 
             return self._to_metadata(record)
