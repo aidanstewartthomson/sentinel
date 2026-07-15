@@ -1,10 +1,11 @@
-from pathlib import Path
+from io import BytesIO
+
 from PIL import Image
 from transformers import pipeline
 
 
 class StubVLMClient:
-    def caption_image(self, image_path: Path) -> str:
+    def caption_image(self, image: bytes) -> str:
         return "This is a caption."
 
 
@@ -15,14 +16,14 @@ class VLMClient:
             "image-text-to-text", model=self.model_name, device_map="auto"
         )
 
-    def caption_image(self, image_path: Path) -> str:
-        image = Image.open(image_path).convert("RGB")
+    def caption_image(self, image: bytes) -> str:
+        pil_image = Image.open(BytesIO(image)).convert("RGB")
 
         messages = [
             {
                 "role": "user",
                 "content": [
-                    {"type": "image", "image": image},
+                    {"type": "image", "image": pil_image},
                     {"type": "text", "text": "Describe this image."},
                 ],
             }

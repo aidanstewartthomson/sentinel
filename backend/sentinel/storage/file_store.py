@@ -1,24 +1,29 @@
-from pathlib import Path
-
 from fastapi import UploadFile
+from google.cloud import storage
 
 
 class FileStore:
-    def __init__(self, upload_dir: Path) -> None:
-        self.upload_dir = upload_dir
-        self.upload_dir.mkdir(parents=True, exist_ok=True)
+    def __init__(self, bucket_name: str) -> None:
+        self.bucket = storage.Client().bucket(bucket_name)
 
-    def save(self, file: UploadFile, filename: str) -> Path:
-        save_path = self.get_path(filename)
-
+    def save(self, file: UploadFile, filename: str) -> bytes:
         contents = file.file.read()
-        save_path.write_bytes(contents)
 
-        return save_path
+        blob = self.bucket.blob(filename)
+        blob.upload_from_string(contents, content_type=file.content_type)
 
-    def get_path(self, filename: str) -> Path:
-        return self.upload_dir / filename
+        return contents
+
+    def read(self, filename: str) -> bytes | None:
+        blob = self.bucket.blob(filename)
+
+        if not blob.exists():
+            return None
+
+        return blob.download_as_bytes()
 
     def delete(self, filename: str) -> None:
-        path = self.get_path(filename)
-        path.unlink(missing_ok=True)
+        blob = self.bucket.blob(filename)
+
+        if blob.exists():
+            blob.delete()

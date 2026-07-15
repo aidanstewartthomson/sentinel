@@ -3,7 +3,7 @@ from pathlib import Path
 from uuid import UUID, uuid4
 
 from fastapi import HTTPException, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import Response
 
 from sentinel.models.image import ImageMetadata
 from sentinel.storage.file_store import FileStore
@@ -28,17 +28,17 @@ class ImageService:
         suffix = Path(image.filename).suffix
         stored_filename = f"{image_id}{suffix}"
 
-        path = self.file_store.save(image, filename=stored_filename)
-
-        caption = self.vlm.caption_image(path)
+        contents = self.file_store.save(image, filename=stored_filename)
+        caption = self.vlm.caption_image(contents)
 
         metadata = ImageMetadata(
             id=image_id,
             user_filename=image.filename,
             stored_filename=stored_filename,
+            content_type=image.content_type,
             caption=caption,
             created_at=datetime.now(timezone.utc),
-            size_bytes=path.stat().st_size,
+            size_bytes=len(contents),
         )
 
         self.metadata_store.save(metadata)
@@ -53,18 +53,18 @@ class ImageService:
 
         return metadata
 
-    def get_content(self, image_id: UUID) -> FileResponse:
+    def get_content(self, image_id: UUID) -> Response:
         metadata = self.metadata_store.get(image_id)
 
         if metadata is None:
             raise HTTPException(status_code=404, detail="Image not found")
 
-        path = self.file_store.get_path(metadata.stored_filename)
+        contents = self.file_store.read(metadata.stored_filename)
 
-        if not path.is_file():
+        if contents is None:
             raise HTTPException(status_code=404, detail="Image not found")
 
-        return FileResponse(path=path)
+        return Response(content=contents, media_type=metadata.content_type)
 
     def list(self) -> list[ImageMetadata]:
         return self.metadata_store.list()
@@ -87,19 +87,23 @@ class ImageService:
 
         return metadata
 
-    def download(self, image_id: UUID) -> FileResponse:
+    def download(self, image_id: UUID) -> Response:
         metadata = self.metadata_store.get(image_id)
 
         if metadata is None:
             raise HTTPException(status_code=404, detail="Image not found")
 
-        path = self.file_store.get_path(metadata.stored_filename)
+        contents = self.file_store.read(metadata.stored_filename)
 
-        if not path.is_file():
+        if contents is None:
             raise HTTPException(status_code=404, detail="Image not found")
 
-        return FileResponse(
-            path=path,
-            filename=metadata.user_filename,
-            content_disposition_type="attachment",
+        return Response(
+            content=contents,
+            media_type=metadata.content_type,
+            headers={
+                "Content-Disposition": (
+                    f'attachment; filename="{metadata.user_filename}"'
+                )
+            },
         )

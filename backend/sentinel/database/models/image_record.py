@@ -10,6 +10,7 @@ class ImageRecord(Base):
     id: Mapped[UUID] = mapped_column(primary_key=True)
     user_filename: Mapped[str]
     stored_filename: Mapped[str]
+    content_type: Mapped[str]
     caption: Mapped[str]
     created_at: Mapped[datetime]
     size_bytes: Mapped[int]

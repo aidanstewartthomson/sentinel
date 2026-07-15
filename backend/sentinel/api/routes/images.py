@@ -1,8 +1,9 @@
 from uuid import UUID
-from fastapi import APIRouter, UploadFile
-from fastapi.responses import FileResponse
 
-from sentinel.core.config import UPLOAD_DIR
+from fastapi import APIRouter, UploadFile
+from fastapi.responses import Response
+
+from sentinel.core.config import GCS_BUCKET
 from sentinel.models.image import ImageMetadata, RenameImageRequest
 from sentinel.services.image_service import ImageService
 from sentinel.storage.file_store import FileStore
@@ -11,7 +12,7 @@ from sentinel.vision.vlm_client import StubVLMClient
 
 router = APIRouter(prefix="/images")
 
-file_store = FileStore(upload_dir=UPLOAD_DIR)
+file_store = FileStore(bucket_name=GCS_BUCKET)
 metadata_store = MetadataStore()
 vlm = StubVLMClient()
 
@@ -46,10 +47,10 @@ def delete_image(image_id: UUID) -> ImageMetadata:
 
 
 @router.get("/{image_id}/content")
-def get_image_content(image_id: UUID) -> FileResponse:
+def get_image_content(image_id: UUID) -> Response:
     return image_service.get_content(image_id)
 
 
 @router.get("/{image_id}/download")
-def download_image(image_id: UUID) -> FileResponse:
+def download_image(image_id: UUID) -> Response:
     return image_service.download(image_id)
