@@ -7,7 +7,11 @@ from sentinel.database.models.base import Base
 # unused imports for table creation
 from sentinel.database.models.image_record import ImageRecord
 
-engine = create_engine(url=DATABASE_URL)
+engine = create_engine(
+    url=DATABASE_URL,
+    pool_pre_ping=True,
+    pool_recycle=1800,
+)
 SessionFactory = sessionmaker(bind=engine)
 
 Base.metadata.create_all(engine)

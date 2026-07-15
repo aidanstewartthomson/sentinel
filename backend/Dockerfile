@@ -16,7 +16,6 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
 
 RUN useradd --create-home --uid 10001 app \
-    && mkdir -p /app/data \
     && chown -R app:app /app
 
 COPY --chown=app:app sentinel ./sentinel
