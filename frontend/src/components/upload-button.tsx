@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuth } from "@clerk/nextjs";
 import { type ChangeEvent, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LoaderCircleIcon, UploadIcon } from "lucide-react";
@@ -11,6 +12,7 @@ import { uploadImage } from "@/lib/api/images.client";
 
 export function UploadButton() {
   const router = useRouter();
+  const { getToken } = useAuth();
   const inputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -21,7 +23,7 @@ export function UploadButton() {
     setIsUploading(true);
 
     try {
-      await uploadImage(file);
+      await uploadImage(file, getToken);
       toast.success("Image uploaded", {
         description: `${file.name} is now available in your library.`,
       });

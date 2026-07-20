@@ -98,6 +98,7 @@ export default async function Home() {
                                 width={40}
                                 height={40}
                                 sizes="40px"
+                                unoptimized
                                 className="size-full object-cover"
                               />
                             </div>

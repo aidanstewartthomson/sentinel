@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuth } from "@clerk/nextjs";
 import { type FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -56,6 +57,7 @@ export function ImageActions({
   userFilename,
 }: ImageActionsProps) {
   const router = useRouter();
+  const { getToken } = useAuth();
   const [isRenameOpen, setIsRenameOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [filename, setFilename] = useState(userFilename);
@@ -94,7 +96,7 @@ export function ImageActions({
     setError(null);
 
     try {
-      await renameImage(imageId, nextFilename);
+      await renameImage(imageId, nextFilename, getToken);
       setIsRenameOpen(false);
       toast.success("Image renamed", {
         description: `“${userFilename}” was renamed to “${nextFilename}”.`,
@@ -112,7 +114,7 @@ export function ImageActions({
     setDeleteError(null);
 
     try {
-      await deleteImage(imageId);
+      await deleteImage(imageId, getToken);
       setIsDeleteOpen(false);
       toast.success("Image deleted", {
         description: `${userFilename} was removed from your library.`,

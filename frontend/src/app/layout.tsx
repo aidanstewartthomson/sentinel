@@ -35,7 +35,10 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="flex min-h-full flex-col">
-        <ClerkProvider appearance={{ theme: shadcn }}>
+        <ClerkProvider
+          appearance={{ theme: shadcn }}
+          afterSignOutUrl="/sign-in"
+        >
           <ThemeProvider
             attribute="class"
             defaultTheme="system"

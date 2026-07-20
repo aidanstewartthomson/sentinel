@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { auth } from "@clerk/nextjs/server";
 
 import { AppSidebar } from "@/components/app-sidebar";
 import { Separator } from "@/components/ui/separator";
@@ -9,11 +10,13 @@ import {
 } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-export default function AppLayout({
+export default async function AppLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  await auth.protect();
+
   return (
     <TooltipProvider>
       <SidebarProvider
