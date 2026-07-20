@@ -4,9 +4,11 @@ import * as React from "react";
 import Link from "next/link";
 import { ImagesIcon } from "lucide-react";
 
+import { NavUser } from "@/components/nav-user";
 import {
   Sidebar,
   SidebarContent,
+  SidebarGroup,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -17,11 +19,11 @@ import {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="offcanvas" {...props}>
-      <SidebarHeader className="h-(--header-height) shrink-0 justify-center">
+      <SidebarHeader className="h-(--header-height) justify-center">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
-              className="cursor-pointer hover:bg-transparent hover:text-sidebar-foreground active:bg-transparent active:text-sidebar-foreground data-[slot=sidebar-menu-button]:p-1.5!"
+              size="lg"
               render={<Link href="/" aria-label="Sentinel home" />}
             >
               <span className="text-lg font-semibold tracking-tight">
@@ -31,20 +33,23 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent className="p-2">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              render={<Link href="/" aria-current="page" />}
-              tooltip="Library"
-              isActive
-            >
-              <ImagesIcon />
-              <span>Library</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                render={<Link href="/" aria-current="page" />}
+                tooltip="Library"
+                isActive
+              >
+                <ImagesIcon />
+                <span>Library</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroup>
       </SidebarContent>
+      <NavUser />
       <SidebarRail />
     </Sidebar>
   );
