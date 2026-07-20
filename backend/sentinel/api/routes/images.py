@@ -23,39 +23,39 @@ image_service = ImageService(
 
 
 @router.post("")
-def upload_image(_user_id: CurrentUserId, image: UploadFile) -> ImageMetadata:
-    return image_service.ingest(image)
+def upload_image(user_id: CurrentUserId, image: UploadFile) -> ImageMetadata:
+    return image_service.ingest(image, user_id)
 
 
 @router.get("")
-def list_images(_user_id: CurrentUserId) -> list[ImageMetadata]:
-    return image_service.list()
+def list_images(user_id: CurrentUserId) -> list[ImageMetadata]:
+    return image_service.list(user_id)
 
 
 @router.get("/{image_id}")
-def get_image_metadata(_user_id: CurrentUserId, image_id: UUID) -> ImageMetadata:
-    return image_service.get_metadata(image_id)
+def get_image_metadata(user_id: CurrentUserId, image_id: UUID) -> ImageMetadata:
+    return image_service.get_metadata(image_id, user_id)
 
 
 @router.patch("/{image_id}")
 def rename_image(
-    _user_id: CurrentUserId,
+    user_id: CurrentUserId,
     image_id: UUID,
     request: RenameImageRequest,
 ) -> ImageMetadata:
-    return image_service.rename(image_id, request.filename)
+    return image_service.rename(image_id, user_id, request.filename)
 
 
 @router.delete("/{image_id}")
-def delete_image(_user_id: CurrentUserId, image_id: UUID) -> ImageMetadata:
-    return image_service.delete(image_id)
+def delete_image(user_id: CurrentUserId, image_id: UUID) -> ImageMetadata:
+    return image_service.delete(image_id, user_id)
 
 
 @router.get("/{image_id}/content")
-def get_image_content(_user_id: CurrentUserId, image_id: UUID) -> Response:
-    return image_service.get_content(image_id)
+def get_image_content(user_id: CurrentUserId, image_id: UUID) -> Response:
+    return image_service.get_content(image_id, user_id)
 
 
 @router.get("/{image_id}/download")
-def download_image(_user_id: CurrentUserId, image_id: UUID) -> Response:
-    return image_service.download(image_id)
+def download_image(user_id: CurrentUserId, image_id: UUID) -> Response:
+    return image_service.download(image_id, user_id)

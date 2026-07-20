@@ -1,10 +1,12 @@
 from datetime import datetime
 from uuid import UUID
+
 from pydantic import BaseModel
 
 
 class ImageMetadata(BaseModel):
     id: UUID
+    user_id: str
     user_filename: str
     stored_filename: str
     content_type: str

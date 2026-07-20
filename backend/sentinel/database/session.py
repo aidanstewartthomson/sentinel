@@ -5,7 +5,7 @@ from sentinel.core.config import DATABASE_URL
 from sentinel.database.models.base import Base
 
 # unused imports for table creation
-from sentinel.database.models.image_record import ImageRecord
+from sentinel.database.models.image import ImageRecord
 
 engine = create_engine(
     url=DATABASE_URL,
