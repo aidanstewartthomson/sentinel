@@ -8,7 +8,6 @@ from fastapi.responses import Response
 from sentinel.models.image import ImageMetadata
 from sentinel.storage.file_store import FileStore
 from sentinel.storage.metadata_store import MetadataStore
-from sentinel.vision.vlm_client import StubVLMClient, VLMClient
 
 
 class ImageService:
@@ -16,11 +15,9 @@ class ImageService:
         self,
         file_store: FileStore,
         metadata_store: MetadataStore,
-        vlm: StubVLMClient | VLMClient,
     ):
         self.file_store = file_store
         self.metadata_store = metadata_store
-        self.vlm = vlm
 
     def ingest(self, image: UploadFile, user_id: str) -> ImageMetadata:
         image_id = uuid4()
@@ -29,7 +26,6 @@ class ImageService:
         stored_filename = f"{image_id}{suffix}"
 
         contents = self.file_store.save(image, filename=stored_filename)
-        caption = self.vlm.caption_image(contents)
 
         metadata = ImageMetadata(
             id=image_id,
@@ -37,7 +33,6 @@ class ImageService:
             user_filename=image.filename,
             stored_filename=stored_filename,
             content_type=image.content_type,
-            caption=caption,
             created_at=datetime.now(timezone.utc),
             size_bytes=len(contents),
         )

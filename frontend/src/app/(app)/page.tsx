@@ -94,7 +94,7 @@ export default async function Home() {
                             <div className="relative size-10 shrink-0 overflow-hidden rounded-lg bg-muted ring-1 ring-foreground/10">
                               <Image
                                 src={`/api/images/${image.id}/content`}
-                                alt={image.caption || ""}
+                                alt=""
                                 width={40}
                                 height={40}
                                 sizes="40px"

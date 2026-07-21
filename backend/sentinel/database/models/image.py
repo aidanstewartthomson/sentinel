@@ -16,6 +16,5 @@ class ImageRecord(Base):
     user_filename: Mapped[str] = mapped_column(String(512))
     stored_filename: Mapped[str] = mapped_column(String(512))
     content_type: Mapped[str] = mapped_column(String(128))
-    caption: Mapped[str] = mapped_column(String(2048))
     created_at: Mapped[datetime]
     size_bytes: Mapped[int]

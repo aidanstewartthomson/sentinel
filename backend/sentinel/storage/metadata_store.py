@@ -79,7 +79,6 @@ class MetadataStore:
             user_filename=metadata.user_filename,
             stored_filename=metadata.stored_filename,
             content_type=metadata.content_type,
-            caption=metadata.caption,
             created_at=metadata.created_at,
             size_bytes=metadata.size_bytes,
         )
@@ -91,7 +90,6 @@ class MetadataStore:
             user_filename=record.user_filename,
             stored_filename=record.stored_filename,
             content_type=record.content_type,
-            caption=record.caption,
             created_at=record.created_at,
             size_bytes=record.size_bytes,
         )

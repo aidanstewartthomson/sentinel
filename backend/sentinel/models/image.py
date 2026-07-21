@@ -10,7 +10,6 @@ class ImageMetadata(BaseModel):
     user_filename: str
     stored_filename: str
     content_type: str
-    caption: str
     created_at: datetime
     size_bytes: int
 

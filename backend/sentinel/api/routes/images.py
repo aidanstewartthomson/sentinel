@@ -9,16 +9,15 @@ from sentinel.models.image import ImageMetadata, RenameImageRequest
 from sentinel.services.image_service import ImageService
 from sentinel.storage.file_store import FileStore
 from sentinel.storage.metadata_store import MetadataStore
-from sentinel.vision.vlm_client import StubVLMClient
 
 router = APIRouter(prefix="/images")
 
 file_store = FileStore(bucket_name=GCS_BUCKET)
 metadata_store = MetadataStore()
-vlm = StubVLMClient()
 
 image_service = ImageService(
-    file_store=file_store, metadata_store=metadata_store, vlm=vlm
+    file_store=file_store,
+    metadata_store=metadata_store,
 )
 
 
