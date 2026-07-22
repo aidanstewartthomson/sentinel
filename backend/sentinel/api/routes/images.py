@@ -4,7 +4,7 @@ from fastapi import APIRouter, UploadFile
 from fastapi.responses import Response
 
 from sentinel.api.deps import CurrentUserId
-from sentinel.core.config import GCS_BUCKET
+from sentinel.core.config import settings
 from sentinel.models.image import ImageMetadata, RenameImageRequest
 from sentinel.services.image_service import ImageService
 from sentinel.storage.file_store import FileStore
@@ -12,7 +12,7 @@ from sentinel.storage.metadata_store import MetadataStore
 
 router = APIRouter(prefix="/images")
 
-file_store = FileStore(bucket_name=GCS_BUCKET)
+file_store = FileStore(bucket_name=settings.gcs_bucket)
 metadata_store = MetadataStore()
 
 image_service = ImageService(

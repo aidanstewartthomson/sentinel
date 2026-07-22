@@ -3,15 +3,15 @@ from typing import Annotated
 from clerk_backend_api import AuthenticateRequestOptions, authenticate_request
 from fastapi import Depends, HTTPException, Request
 
-from sentinel.core.config import CLERK_AUTHORIZED_PARTIES, CLERK_SECRET_KEY
+from sentinel.core.config import settings
 
 
 def get_current_user_id(request: Request) -> str:
     state = authenticate_request(
         request,
         AuthenticateRequestOptions(
-            secret_key=CLERK_SECRET_KEY,
-            authorized_parties=CLERK_AUTHORIZED_PARTIES,
+            secret_key=settings.clerk_secret_key,
+            authorized_parties=[settings.clerk_authorized_party],
             accepts_token=["session_token"],
         ),
     )

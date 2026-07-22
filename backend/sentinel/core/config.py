@@ -1,13 +1,17 @@
-import os
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-DATABASE_URL = os.environ["DATABASE_URL"]
-GCS_BUCKET = os.environ["GCS_BUCKET"]
 
-CLERK_SECRET_KEY = os.environ["CLERK_SECRET_KEY"]
-CLERK_AUTHORIZED_PARTIES = [
-    party.strip()
-    for party in os.environ.get(
-        "CLERK_AUTHORIZED_PARTIES", "http://localhost:3000"
-    ).split(",")
-    if party.strip()
-]
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+    database_url: str
+    gcs_bucket: str
+    clerk_secret_key: str
+    clerk_authorized_party: str = "http://localhost:3000"
+
+
+settings = Settings()
