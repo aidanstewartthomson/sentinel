@@ -5,9 +5,13 @@ from uuid import UUID, uuid4
 from fastapi import HTTPException, UploadFile
 from fastapi.responses import Response
 
-from sentinel.models.image import ImageMetadata
+from sentinel.database.models.image import ImageRecord
+from sentinel.embeddings.client import EmbeddingClient
+from sentinel.models.image import ImageResponse
 from sentinel.storage.file_store import FileStore
 from sentinel.storage.metadata_store import MetadataStore
+
+DEFAULT_IMAGE_CONTENT_TYPE = "application/octet-stream"
 
 
 class ImageService:
@@ -15,91 +19,99 @@ class ImageService:
         self,
         file_store: FileStore,
         metadata_store: MetadataStore,
+        embedding_client: EmbeddingClient,
     ):
         self.file_store = file_store
         self.metadata_store = metadata_store
+        self.embedding_client = embedding_client
 
-    def ingest(self, image: UploadFile, user_id: str) -> ImageMetadata:
+    def ingest(self, image: UploadFile, user_id: str) -> ImageResponse:
         image_id = uuid4()
 
         suffix = Path(image.filename).suffix
         stored_filename = f"{image_id}{suffix}"
+        content_type = image.content_type or DEFAULT_IMAGE_CONTENT_TYPE
 
         contents = self.file_store.save(image, filename=stored_filename)
+        embedding = self.embedding_client.embed_image(contents, content_type)
 
-        metadata = ImageMetadata(
+        record = ImageRecord(
             id=image_id,
             user_id=user_id,
             user_filename=image.filename,
             stored_filename=stored_filename,
-            content_type=image.content_type,
+            content_type=content_type,
             created_at=datetime.now(timezone.utc),
             size_bytes=len(contents),
+            embedding=embedding,
         )
 
-        self.metadata_store.save(metadata)
+        self.metadata_store.save(record)
 
-        return metadata
+        return ImageResponse.from_record(record)
 
-    def get_metadata(self, image_id: UUID, user_id: str) -> ImageMetadata:
-        metadata = self.metadata_store.get(image_id, user_id)
+    def get_metadata(self, image_id: UUID, user_id: str) -> ImageResponse:
+        record = self.metadata_store.get(image_id, user_id)
 
-        if metadata is None:
+        if record is None:
             raise HTTPException(status_code=404, detail="Image not found")
 
-        return metadata
+        return ImageResponse.from_record(record)
 
     def get_content(self, image_id: UUID, user_id: str) -> Response:
-        metadata = self.metadata_store.get(image_id, user_id)
+        record = self.metadata_store.get(image_id, user_id)
 
-        if metadata is None:
+        if record is None:
             raise HTTPException(status_code=404, detail="Image not found")
 
-        contents = self.file_store.read(metadata.stored_filename)
+        contents = self.file_store.read(record.stored_filename)
 
         if contents is None:
             raise HTTPException(status_code=404, detail="Image not found")
 
-        return Response(content=contents, media_type=metadata.content_type)
+        return Response(content=contents, media_type=record.content_type)
 
-    def list(self, user_id: str) -> list[ImageMetadata]:
-        return self.metadata_store.list(user_id)
+    def list(self, user_id: str) -> list[ImageResponse]:
+        return [
+            ImageResponse.from_record(record)
+            for record in self.metadata_store.list(user_id)
+        ]
 
-    def rename(self, image_id: UUID, user_id: str, filename: str) -> ImageMetadata:
-        metadata = self.metadata_store.rename(image_id, user_id, filename=filename)
+    def rename(self, image_id: UUID, user_id: str, filename: str) -> ImageResponse:
+        record = self.metadata_store.rename(image_id, user_id, filename=filename)
 
-        if metadata is None:
+        if record is None:
             raise HTTPException(status_code=404, detail="Image not found")
 
-        return metadata
+        return ImageResponse.from_record(record)
 
-    def delete(self, image_id: UUID, user_id: str) -> ImageMetadata:
-        metadata = self.metadata_store.delete(image_id, user_id)
+    def delete(self, image_id: UUID, user_id: str) -> ImageResponse:
+        record = self.metadata_store.delete(image_id, user_id)
 
-        if metadata is None:
+        if record is None:
             raise HTTPException(status_code=404, detail="Image not found")
 
-        self.file_store.delete(metadata.stored_filename)
+        self.file_store.delete(record.stored_filename)
 
-        return metadata
+        return ImageResponse.from_record(record)
 
     def download(self, image_id: UUID, user_id: str) -> Response:
-        metadata = self.metadata_store.get(image_id, user_id)
+        record = self.metadata_store.get(image_id, user_id)
 
-        if metadata is None:
+        if record is None:
             raise HTTPException(status_code=404, detail="Image not found")
 
-        contents = self.file_store.read(metadata.stored_filename)
+        contents = self.file_store.read(record.stored_filename)
 
         if contents is None:
             raise HTTPException(status_code=404, detail="Image not found")
 
         return Response(
             content=contents,
-            media_type=metadata.content_type,
+            media_type=record.content_type,
             headers={
                 "Content-Disposition": (
-                    f'attachment; filename="{metadata.user_filename}"'
+                    f'attachment; filename="{record.user_filename}"'
                 )
             },
         )

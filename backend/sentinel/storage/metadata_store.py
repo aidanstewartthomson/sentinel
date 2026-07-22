@@ -4,41 +4,34 @@ from sqlalchemy import select
 
 from sentinel.database.models.image import ImageRecord
 from sentinel.database.session import SessionFactory
-from sentinel.models.image import ImageMetadata
 
 
 class MetadataStore:
-    def save(self, metadata: ImageMetadata) -> None:
-        record = self._to_record(metadata)
-
+    def save(self, record: ImageRecord) -> None:
         with SessionFactory() as session:
             session.add(record)
             session.commit()
 
-    def get(self, image_id: UUID, user_id: str) -> ImageMetadata | None:
+    def get(self, image_id: UUID, user_id: str) -> ImageRecord | None:
         with SessionFactory() as session:
-            record = session.scalar(
+            return session.scalar(
                 select(ImageRecord).where(
                     ImageRecord.id == image_id,
                     ImageRecord.user_id == user_id,
                 )
             )
 
-            if record is None:
-                return None
-
-            return self._to_metadata(record)
-
-    def list(self, user_id: str) -> list[ImageMetadata]:
+    def list(self, user_id: str) -> list[ImageRecord]:
         with SessionFactory() as session:
-            records = session.scalars(
-                select(ImageRecord).where(ImageRecord.user_id == user_id)
-            ).all()
-            return [self._to_metadata(record) for record in records]
+            return list(
+                session.scalars(
+                    select(ImageRecord).where(ImageRecord.user_id == user_id)
+                ).all()
+            )
 
     def rename(
         self, image_id: UUID, user_id: str, filename: str
-    ) -> ImageMetadata | None:
+    ) -> ImageRecord | None:
         with SessionFactory() as session:
             record = session.scalar(
                 select(ImageRecord).where(
@@ -53,9 +46,9 @@ class MetadataStore:
             record.user_filename = filename
             session.commit()
 
-            return self._to_metadata(record)
+            return record
 
-    def delete(self, image_id: UUID, user_id: str) -> ImageMetadata | None:
+    def delete(self, image_id: UUID, user_id: str) -> ImageRecord | None:
         with SessionFactory() as session:
             record = session.scalar(
                 select(ImageRecord).where(
@@ -70,26 +63,4 @@ class MetadataStore:
             session.delete(record)
             session.commit()
 
-            return self._to_metadata(record)
-
-    def _to_record(self, metadata: ImageMetadata) -> ImageRecord:
-        return ImageRecord(
-            id=metadata.id,
-            user_id=metadata.user_id,
-            user_filename=metadata.user_filename,
-            stored_filename=metadata.stored_filename,
-            content_type=metadata.content_type,
-            created_at=metadata.created_at,
-            size_bytes=metadata.size_bytes,
-        )
-
-    def _to_metadata(self, record: ImageRecord) -> ImageMetadata:
-        return ImageMetadata(
-            id=record.id,
-            user_id=record.user_id,
-            user_filename=record.user_filename,
-            stored_filename=record.stored_filename,
-            content_type=record.content_type,
-            created_at=record.created_at,
-            size_bytes=record.size_bytes,
-        )
+            return record

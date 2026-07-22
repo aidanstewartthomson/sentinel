@@ -12,6 +12,6 @@ engine = create_engine(
     pool_pre_ping=True,
     pool_recycle=1800,
 )
-SessionFactory = sessionmaker(bind=engine)
+SessionFactory = sessionmaker(bind=engine, expire_on_commit=False)
 
 Base.metadata.create_all(engine)

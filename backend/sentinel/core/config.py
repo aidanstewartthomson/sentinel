@@ -10,6 +10,12 @@ class Settings(BaseSettings):
 
     database_url: str
     gcs_bucket: str
+
+    google_cloud_project: str
+    vertex_location: str = "global"
+    embedding_model: str = "gemini-embedding-2"
+    embedding_dimensions: int = 768
+
     clerk_secret_key: str
     clerk_authorized_party: str = "http://localhost:3000"
 

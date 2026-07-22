@@ -8,9 +8,10 @@ class FileStore:
 
     def save(self, file: UploadFile, filename: str) -> bytes:
         contents = file.file.read()
+        content_type = file.content_type or "application/octet-stream"
 
         blob = self.bucket.blob(filename)
-        blob.upload_from_string(contents, content_type=file.content_type)
+        blob.upload_from_string(contents, content_type=content_type)
 
         return contents
 
