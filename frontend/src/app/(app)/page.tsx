@@ -1,7 +1,6 @@
-import Image from "next/image";
 import { ImageIcon } from "lucide-react";
 
-import { ImageActions } from "@/components/image-actions";
+import { LibraryTable } from "@/components/library-table";
 import { UploadButton } from "@/components/upload-button";
 import {
   Empty,
@@ -11,17 +10,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { listImages } from "@/lib/api/images.server";
-import { formatDate, formatFileSize } from "@/lib/utils";
 
 export default async function Home() {
   const images = await listImages();
@@ -57,88 +46,7 @@ export default async function Home() {
               </EmptyContent>
             </Empty>
           ) : (
-            <>
-              <div className="mb-3 flex items-end justify-between gap-4">
-                <h2
-                  id="library-heading"
-                  className="text-sm font-medium text-muted-foreground"
-                >
-                  {images.length} {images.length === 1 ? "image" : "images"}
-                </h2>
-                <UploadButton />
-              </div>
-              <div className="overflow-hidden rounded-lg border bg-background">
-                <Table className="table-fixed">
-                  <TableCaption className="sr-only">
-                    Images in your Sentinel library
-                  </TableCaption>
-                  <TableHeader className="bg-muted/30">
-                    <TableRow>
-                      <TableHead className="h-11 pr-3 pl-4">Name</TableHead>
-                      <TableHead className="hidden h-11 w-32 px-3 md:table-cell">
-                        Uploaded
-                      </TableHead>
-                      <TableHead className="hidden h-11 w-24 px-3 sm:table-cell">
-                        File size
-                      </TableHead>
-                      <TableHead className="h-11 w-14 pr-4">
-                        <span className="sr-only">Actions</span>
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {images.map((image) => (
-                      <TableRow key={image.id}>
-                        <TableCell className="min-w-0 py-2.5 pr-3 pl-4">
-                          <div className="flex min-w-0 items-center gap-3">
-                            <div className="relative size-10 shrink-0 overflow-hidden rounded-lg bg-muted ring-1 ring-foreground/10">
-                              <Image
-                                src={`/api/images/${image.id}/content`}
-                                alt=""
-                                width={40}
-                                height={40}
-                                sizes="40px"
-                                unoptimized
-                                className="size-full object-cover"
-                              />
-                            </div>
-                            <div className="min-w-0">
-                              <p
-                                className="truncate font-medium"
-                                title={image.user_filename}
-                              >
-                                {image.user_filename}
-                              </p>
-                              <p className="mt-0.5 truncate text-xs text-muted-foreground sm:hidden">
-                                {formatFileSize(image.size_bytes)}
-                                <span aria-hidden="true"> · </span>
-                                <time dateTime={image.created_at}>
-                                  {formatDate(image.created_at)}
-                                </time>
-                              </p>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="hidden w-32 px-3 py-2.5 text-muted-foreground md:table-cell">
-                          <time dateTime={image.created_at}>
-                            {formatDate(image.created_at)}
-                          </time>
-                        </TableCell>
-                        <TableCell className="hidden w-24 px-3 py-2.5 text-muted-foreground sm:table-cell">
-                          {formatFileSize(image.size_bytes)}
-                        </TableCell>
-                        <TableCell className="w-14 py-2.5 pr-4 text-right">
-                          <ImageActions
-                            imageId={image.id}
-                            userFilename={image.user_filename}
-                          />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </>
+            <LibraryTable images={images} />
           )}
         </section>
       </div>
