@@ -17,21 +17,40 @@ export function UploadButton() {
   const [isUploading, setIsUploading] = useState(false);
 
   async function handleUpload(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(event.target.files ?? []);
+    if (files.length === 0) return;
 
     setIsUploading(true);
 
     try {
-      await uploadImage(file, getToken);
-      toast.success("Image uploaded", {
-        description: `${file.name} is now available in your library.`,
-      });
-      router.refresh();
-    } catch {
-      toast.error("Upload failed", {
-        description: "The image could not be uploaded. Please try again.",
-      });
+      const results = await Promise.allSettled(
+        files.map((file) => uploadImage(file, getToken)),
+      );
+
+      const succeeded = results.filter((r) => r.status === "fulfilled").length;
+      const failed = results.length - succeeded;
+
+      if (succeeded > 0) {
+        toast.success(
+          succeeded === 1 ? "Image uploaded" : `${succeeded} images uploaded`,
+          {
+            description:
+              files.length === 1
+                ? `${files[0].name} is now available in your library.`
+                : "They are now available in your library.",
+          },
+        );
+        router.refresh();
+      }
+
+      if (failed > 0) {
+        toast.error(
+          failed === 1 ? "Upload failed" : `${failed} uploads failed`,
+          {
+            description: "Please try again.",
+          },
+        );
+      }
     } finally {
       event.target.value = "";
       setIsUploading(false);
@@ -44,10 +63,11 @@ export function UploadButton() {
         ref={inputRef}
         type="file"
         accept="image/*"
+        multiple
         className="sr-only"
         onChange={handleUpload}
         disabled={isUploading}
-        aria-label="Choose an image to upload"
+        aria-label="Choose images to upload"
       />
       <Button
         type="button"
@@ -60,7 +80,7 @@ export function UploadButton() {
         ) : (
           <UploadIcon data-icon="inline-start" />
         )}
-        {isUploading ? "Uploading…" : "Upload image"}
+        {isUploading ? "Uploading…" : "Upload images"}
       </Button>
     </div>
   );
