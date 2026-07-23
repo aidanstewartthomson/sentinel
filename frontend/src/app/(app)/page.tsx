@@ -27,7 +27,7 @@ export default async function Home() {
   const images = await listImages();
 
   return (
-    <div className="@container/main flex min-w-0 flex-1 flex-col">
+    <div className="@container/main flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
       <div className="mx-auto flex w-full max-w-7xl min-w-0 flex-1 flex-col gap-6 p-4 md:p-6 lg:px-8 lg:py-8">
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-semibold tracking-tight">

@@ -2,7 +2,8 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ImagesIcon } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { ImagesIcon, MessageCircleIcon } from "lucide-react";
 
 import { NavUser } from "@/components/nav-user";
 import {
@@ -16,7 +17,22 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 
+const navigation = [
+  {
+    title: "Chat",
+    href: "/chat",
+    icon: MessageCircleIcon,
+  },
+  {
+    title: "Library",
+    href: "/",
+    icon: ImagesIcon,
+  },
+];
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const pathname = usePathname();
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader className="h-(--header-height) justify-center">
@@ -24,7 +40,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton
               size="lg"
-              render={<Link href="/" aria-label="Sentinel home" />}
+              render={<Link href="/chat" aria-label="Sentinel home" />}
             >
               <span className="text-lg font-semibold tracking-tight">
                 Sentinel
@@ -35,17 +51,29 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                render={<Link href="/" aria-current="page" />}
-                tooltip="Library"
-                isActive
-              >
-                <ImagesIcon />
-                <span>Library</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+          <SidebarMenu className="gap-1">
+            {navigation.map((item) => {
+              const isActive = pathname === item.href;
+              const Icon = item.icon;
+
+              return (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton
+                    render={
+                      <Link
+                        href={item.href}
+                        aria-current={isActive ? "page" : undefined}
+                      />
+                    }
+                    tooltip={item.title}
+                    isActive={isActive}
+                  >
+                    <Icon />
+                    <span>{item.title}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              );
+            })}
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>

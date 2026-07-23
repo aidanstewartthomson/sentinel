@@ -1,17 +1,21 @@
 import { ImageMetadata } from "../types/image";
-
-export type GetToken = () => Promise<string | null>;
-
-async function authHeaders(getToken: GetToken): Promise<HeadersInit> {
-  const token = await getToken();
-  if (!token) {
-    throw new Error("Not signed in");
-  }
-  return { Authorization: `Bearer ${token}` };
-}
+import { authHeaders, type GetToken } from "./auth.client";
 
 export function getImageDownloadUrl(imageId: string): string {
   return `/api/images/${encodeURIComponent(imageId)}/download`;
+}
+
+export async function searchImages(
+  query: string,
+  getToken: GetToken,
+): Promise<ImageMetadata[]> {
+  const params = new URLSearchParams({ q: query });
+  const response = await fetch(`/api/images/search?${params}`, {
+    headers: await authHeaders(getToken),
+  });
+
+  if (!response.ok) throw new Error("Could not search images");
+  return response.json();
 }
 
 export async function uploadImage(

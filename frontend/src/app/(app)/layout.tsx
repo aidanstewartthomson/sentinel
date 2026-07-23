@@ -1,13 +1,9 @@
 import type { CSSProperties } from "react";
 import { auth } from "@clerk/nextjs/server";
 
+import { AppHeader } from "@/components/app-header";
 import { AppSidebar } from "@/components/app-sidebar";
-import { Separator } from "@/components/ui/separator";
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 export default async function AppLayout({
@@ -20,6 +16,7 @@ export default async function AppLayout({
   return (
     <TooltipProvider>
       <SidebarProvider
+        className="h-dvh overflow-hidden md:p-2 md:pl-0"
         style={
           {
             "--sidebar-width": "16rem",
@@ -28,18 +25,11 @@ export default async function AppLayout({
         }
       >
         <AppSidebar variant="inset" />
-        <SidebarInset className="min-w-0 overflow-x-hidden">
-          <header className="flex h-(--header-height) min-w-0 shrink-0 items-center border-b transition-[width,height] ease-linear">
-            <div className="flex w-full min-w-0 items-center gap-1 px-4 lg:gap-2 lg:px-6">
-              <SidebarTrigger className="-ml-1" />
-              <Separator
-                orientation="vertical"
-                className="mx-2 data-vertical:h-4 data-vertical:self-auto"
-              />
-              <span className="truncate text-sm font-medium">Library</span>
-            </div>
-          </header>
-          {children}
+        <SidebarInset className="min-h-0 min-w-0 flex-1 overflow-hidden md:m-0!">
+          <AppHeader />
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            {children}
+          </div>
         </SidebarInset>
       </SidebarProvider>
     </TooltipProvider>

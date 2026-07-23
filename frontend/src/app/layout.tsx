@@ -34,7 +34,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <body className="flex min-h-full flex-col">
+      <body className="flex h-full flex-col">
         <ClerkProvider
           appearance={{ theme: shadcn }}
           afterSignOutUrl="/sign-in"
