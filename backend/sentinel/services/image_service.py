@@ -5,6 +5,7 @@ from uuid import UUID, uuid4
 from fastapi import HTTPException, UploadFile
 from fastapi.responses import Response
 
+from sentinel.core.config import settings
 from sentinel.database.models.image import ImageRecord
 from sentinel.embeddings.client import EmbeddingClient
 from sentinel.models.image import ImageResponse
@@ -118,6 +119,10 @@ class ImageService:
 
     def search(self, q: str, user_id: str) -> list[ImageResponse]:
         embedding = self.embedding_client.embed_text(q)
-        records = self.metadata_store.search(embedding, user_id)
+        records = self.metadata_store.search(
+            embedding,
+            user_id,
+            max_distance=settings.search_max_distance,
+        )
 
         return [ImageResponse.from_record(record) for record in records]

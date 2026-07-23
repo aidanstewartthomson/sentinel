@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     embedding_model: str = "gemini-embedding-2"
     embedding_dimensions: int = 768
 
+    search_max_distance: float = 0.65
+
     clerk_secret_key: str
     clerk_authorized_party: str = "http://localhost:3000"
 

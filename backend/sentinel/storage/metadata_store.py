@@ -63,7 +63,12 @@ class MetadataStore:
 
             return record
 
-    def search(self, embedding: list[float], user_id: str, limit: int = 5):
+    def search(
+        self,
+        embedding: list[float],
+        user_id: str,
+        max_distance: float = 0.65,
+    ):
         query_vector = "[" + ",".join(str(x) for x in embedding) + "]"
         distance = func.cosine_distance(
             ImageRecord.embedding, func.string_to_vector(query_vector)
@@ -76,8 +81,8 @@ class MetadataStore:
                     .where(
                         ImageRecord.user_id == user_id,
                         ImageRecord.embedding.is_not(None),
+                        distance <= max_distance,
                     )
                     .order_by(distance)
-                    .limit(limit)
                 ).all()
             )
