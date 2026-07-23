@@ -34,6 +34,11 @@ def list_images(user_id: CurrentUserId) -> list[ImageResponse]:
     return image_service.list(user_id)
 
 
+@router.get("/search")
+def search_images(user_id: CurrentUserId, q: str) -> list[ImageResponse]:
+    return image_service.search(q, user_id)
+
+
 @router.get("/{image_id}")
 def get_image_metadata(user_id: CurrentUserId, image_id: UUID) -> ImageResponse:
     return image_service.get_metadata(image_id, user_id)

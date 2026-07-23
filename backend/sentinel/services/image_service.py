@@ -115,3 +115,9 @@ class ImageService:
                 )
             },
         )
+
+    def search(self, q: str, user_id: str) -> list[ImageResponse]:
+        embedding = self.embedding_client.embed_text(q)
+        records = self.metadata_store.search(embedding, user_id)
+
+        return [ImageResponse.from_record(record) for record in records]

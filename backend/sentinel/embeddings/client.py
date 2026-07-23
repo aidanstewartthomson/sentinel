@@ -26,3 +26,14 @@ class EmbeddingClient:
         )
 
         return list(result.embeddings[0].values)
+
+    def embed_text(self, text: str) -> list[float]:
+        result = self._client.models.embed_content(
+            model=self.model,
+            contents=text,
+            config=types.EmbedContentConfig(
+                output_dimensionality=self.dimensions,
+            ),
+        )
+
+        return list(result.embeddings[0].values)

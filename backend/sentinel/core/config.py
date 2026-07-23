@@ -19,5 +19,8 @@ class Settings(BaseSettings):
     clerk_secret_key: str
     clerk_authorized_party: str = "http://localhost:3000"
 
+    # local-only bypass, leave unset for real auth
+    dev_auth_user_id: str | None = None
+
 
 settings = Settings()

@@ -7,6 +7,9 @@ from sentinel.core.config import settings
 
 
 def get_current_user_id(request: Request) -> str:
+    if settings.dev_auth_user_id:
+        return settings.dev_auth_user_id
+
     state = authenticate_request(
         request,
         AuthenticateRequestOptions(

@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from sentinel.database.models.image import ImageRecord
 from sentinel.database.session import SessionFactory
@@ -29,9 +29,7 @@ class MetadataStore:
                 ).all()
             )
 
-    def rename(
-        self, image_id: UUID, user_id: str, filename: str
-    ) -> ImageRecord | None:
+    def rename(self, image_id: UUID, user_id: str, filename: str) -> ImageRecord | None:
         with SessionFactory() as session:
             record = session.scalar(
                 select(ImageRecord).where(
@@ -64,3 +62,22 @@ class MetadataStore:
             session.commit()
 
             return record
+
+    def search(self, embedding: list[float], user_id: str, limit: int = 5):
+        query_vector = "[" + ",".join(str(x) for x in embedding) + "]"
+        distance = func.cosine_distance(
+            ImageRecord.embedding, func.string_to_vector(query_vector)
+        )
+
+        with SessionFactory() as session:
+            return list(
+                session.scalars(
+                    select(ImageRecord)
+                    .where(
+                        ImageRecord.user_id == user_id,
+                        ImageRecord.embedding.is_not(None),
+                    )
+                    .order_by(distance)
+                    .limit(limit)
+                ).all()
+            )
