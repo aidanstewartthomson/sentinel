@@ -52,6 +52,7 @@ import {
   MessageScrollerViewport,
 } from "@/components/ui/message-scroller";
 import { Spinner } from "@/components/ui/spinner";
+import { sendChatMessage } from "@/lib/api/chat.client";
 import { searchImages } from "@/lib/api/images.client";
 import type { ImageMetadata } from "@/lib/types/image";
 import { cn, formatFileSize, formatFileType } from "@/lib/utils";
@@ -341,12 +342,16 @@ export function ChatInterface() {
           },
         ]);
       } else {
+        const history = messages
+          .filter((item) => !item.isError)
+          .map(({ role, text }) => ({ role, text }));
+        const { reply } = await sendChatMessage(message, history, getToken);
         setMessages((current) => [
           ...current,
           {
             id: `${turnId}-assistant`,
             role: "assistant",
-            text: "Pick a tool to get started. Chat without tools isn’t wired yet.",
+            text: reply,
           },
         ]);
       }
