@@ -53,7 +53,6 @@ import {
 } from "@/components/ui/message-scroller";
 import { Spinner } from "@/components/ui/spinner";
 import { sendChatMessage } from "@/lib/api/chat.client";
-import { searchImages } from "@/lib/api/images.client";
 import type { ImageMetadata } from "@/lib/types/image";
 import { cn, formatFileSize, formatFileType } from "@/lib/utils";
 
@@ -301,6 +300,10 @@ export function ChatInterface() {
   const [selectedTool, setSelectedTool] = useState<ToolId | null>(null);
   const [pendingMessageId, setPendingMessageId] = useState<string | null>(null);
   const isWorking = pendingMessageId !== null;
+  const pendingStatus =
+    selectedTool === "search"
+      ? "Searching image library…"
+      : "Sentinel is working…";
 
   async function handleSubmit() {
     const message = prompt.trim();
@@ -323,38 +326,25 @@ export function ChatInterface() {
     requestAnimationFrame(() => promptRef.current?.focus());
 
     try {
-      if (tool?.id === "search") {
-        const results = await searchImages(message, getToken);
-        const count = results.length;
-        setMessages((current) => [
-          ...current,
-          {
-            id: `${turnId}-assistant`,
-            role: "assistant",
-            text:
-              count === 0
-                ? "No matching images found."
-                : count === 1
-                  ? "Found 1 matching image."
-                  : `Found ${count} matching images.`,
-            results,
-            toolLabel: "Searched image library",
-          },
-        ]);
-      } else {
-        const history = messages
-          .filter((item) => !item.isError)
-          .map(({ role, text }) => ({ role, text }));
-        const { reply } = await sendChatMessage(message, history, getToken);
-        setMessages((current) => [
-          ...current,
-          {
-            id: `${turnId}-assistant`,
-            role: "assistant",
-            text: reply,
-          },
-        ]);
-      }
+      const history = messages
+        .filter((item) => !item.isError)
+        .map(({ role, text }) => ({ role, text }));
+      const { reply, results, tool_label } = await sendChatMessage(
+        message,
+        history,
+        getToken,
+        tool?.id,
+      );
+      setMessages((current) => [
+        ...current,
+        {
+          id: `${turnId}-assistant`,
+          role: "assistant",
+          text: reply,
+          results: results?.length ? results : undefined,
+          toolLabel: tool_label ?? undefined,
+        },
+      ]);
     } catch {
       setMessages((current) => [
         ...current,
@@ -409,7 +399,7 @@ export function ChatInterface() {
                             <Spinner />
                           </MarkerIcon>
                           <MarkerContent className="shimmer">
-                            Sentinel is working…
+                            {pendingStatus}
                           </MarkerContent>
                         </Marker>
                       </MessageScrollerItem>
