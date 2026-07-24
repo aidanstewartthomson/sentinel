@@ -40,6 +40,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton
               size="lg"
+              className="w-fit hover:bg-transparent hover:text-sidebar-foreground active:bg-transparent"
               render={<Link href="/chat" aria-label="Sentinel home" />}
             >
               <span className="text-lg font-semibold tracking-tight">
