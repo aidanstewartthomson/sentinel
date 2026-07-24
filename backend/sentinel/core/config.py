@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     vertex_location: str = "global"
     embedding_model: str = "gemini-embedding-2"
     embedding_dimensions: int = 768
+    chat_model: str = "gemini-2.5-flash"
 
     search_max_distance: float = 0.65
 
