@@ -1,12 +1,15 @@
 "use client";
 
-import Image from "next/image";
 import { useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import {
+  ArrowUpDownIcon,
   DownloadIcon,
+  Grid2X2Icon,
+  ListIcon,
   LoaderCircleIcon,
+  SearchIcon,
   Trash2Icon,
   XIcon,
 } from "lucide-react";
@@ -14,6 +17,7 @@ import { toast } from "sonner";
 
 import { ImageActions } from "@/components/image-actions";
 import { ImageViewer } from "@/components/image-viewer";
+import { LoadableImage } from "@/components/loadable-image";
 import { UploadButton } from "@/components/upload-button";
 import {
   AlertDialog,
@@ -26,7 +30,37 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/components/ui/input-group";
 import {
   Table,
   TableBody,
@@ -37,39 +71,299 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  ToggleGroup,
+  ToggleGroupItem,
+} from "@/components/ui/toggle-group";
+import {
   deleteImage,
   getImageContentUrl,
   getImageDownloadUrl,
 } from "@/lib/api/images.client";
 import type { ImageMetadata } from "@/lib/types/image";
-import { formatDate, formatFileSize } from "@/lib/utils";
+import {
+  formatDate,
+  formatFileSize,
+  formatFileType,
+} from "@/lib/utils";
 
 type LibraryTableProps = {
   images: ImageMetadata[];
 };
 
+type LibraryView = "grid" | "list";
+
+type SortOrder = "newest" | "oldest" | "name" | "largest" | "smallest";
+
+const SORT_LABELS: Record<SortOrder, string> = {
+  newest: "Newest",
+  oldest: "Oldest",
+  name: "Name",
+  largest: "Largest",
+  smallest: "Smallest",
+};
+
+type ImageCollectionProps = {
+  images: ImageMetadata[];
+  selectedIds: Set<string>;
+  onSelect: (id: string, checked: boolean) => void;
+};
+
+function ImageGrid({
+  images,
+  selectedIds,
+  onSelect,
+}: ImageCollectionProps) {
+  return (
+    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+      {images.map((image, index) => {
+        const isSelected = selectedIds.has(image.id);
+
+        return (
+          <Card
+            key={image.id}
+            size="sm"
+            data-state={isSelected ? "selected" : undefined}
+            className="gap-0 pt-0 pb-0 transition-shadow data-[state=selected]:ring-2 data-[state=selected]:ring-ring"
+          >
+            <CardContent className="relative aspect-square px-0">
+              <ImageViewer
+                imageId={image.id}
+                userFilename={image.user_filename}
+                triggerClassName="relative block size-full overflow-hidden bg-muted"
+              >
+                <LoadableImage
+                  src={getImageContentUrl(image.id)}
+                  alt=""
+                  fill
+                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                  loading={index === 0 ? "eager" : "lazy"}
+                  unoptimized
+                  className="object-cover"
+                />
+              </ImageViewer>
+              <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-2 p-2.5">
+                <div className="pointer-events-auto rounded-md bg-background/90 p-1 shadow-sm supports-backdrop-filter:backdrop-blur-sm">
+                  <Checkbox
+                    checked={isSelected}
+                    onCheckedChange={(checked) => onSelect(image.id, checked)}
+                    aria-label={`Select ${image.user_filename}`}
+                  />
+                </div>
+                <div className="pointer-events-auto rounded-md bg-background/90 shadow-sm supports-backdrop-filter:backdrop-blur-sm">
+                  <ImageActions
+                    imageId={image.id}
+                    userFilename={image.user_filename}
+                  />
+                </div>
+              </div>
+            </CardContent>
+            <CardHeader className="min-w-0 gap-1 px-4 py-3">
+              <CardTitle
+                className="truncate leading-snug"
+                title={image.user_filename}
+              >
+                {image.user_filename}
+              </CardTitle>
+              <CardDescription className="truncate text-xs">
+                {formatFileType(image.user_filename)}
+                <span aria-hidden="true"> · </span>
+                {formatFileSize(image.size_bytes)}
+                <span aria-hidden="true"> · </span>
+                <time dateTime={image.created_at}>
+                  {formatDate(image.created_at)}
+                </time>
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
+
+type ImageListProps = ImageCollectionProps & {
+  allSelected: boolean;
+  someSelected: boolean;
+  onSelectAll: (checked: boolean) => void;
+};
+
+function ImageList({
+  images,
+  selectedIds,
+  allSelected,
+  someSelected,
+  onSelect,
+  onSelectAll,
+}: ImageListProps) {
+  return (
+    <div className="overflow-hidden rounded-lg border bg-background">
+      <Table className="table-fixed">
+        <TableCaption className="sr-only">
+          Images in your library
+        </TableCaption>
+        <TableHeader className="bg-muted/30">
+          <TableRow>
+            <TableHead className="h-11 w-10 pr-0 pl-4">
+              <Checkbox
+                checked={allSelected}
+                indeterminate={someSelected}
+                onCheckedChange={onSelectAll}
+                aria-label="Select all visible images"
+              />
+            </TableHead>
+            <TableHead className="h-11 pr-3 pl-3">Name</TableHead>
+            <TableHead className="hidden h-11 w-32 px-3 md:table-cell">
+              Uploaded
+            </TableHead>
+            <TableHead className="hidden h-11 w-24 px-3 sm:table-cell">
+              File size
+            </TableHead>
+            <TableHead className="h-11 w-14 pr-4">
+              <span className="sr-only">Actions</span>
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {images.map((image) => {
+            const isSelected = selectedIds.has(image.id);
+
+            return (
+              <TableRow
+                key={image.id}
+                data-state={isSelected ? "selected" : undefined}
+              >
+                <TableCell className="w-10 py-2.5 pr-0 pl-4">
+                  <Checkbox
+                    checked={isSelected}
+                    onCheckedChange={(checked) =>
+                      onSelect(image.id, checked)
+                    }
+                    aria-label={`Select ${image.user_filename}`}
+                  />
+                </TableCell>
+                <TableCell className="min-w-0 py-2.5 pr-3 pl-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <ImageViewer
+                      imageId={image.id}
+                      userFilename={image.user_filename}
+                      triggerClassName="relative size-10 shrink-0 overflow-hidden rounded-lg bg-muted ring-1 ring-foreground/10"
+                    >
+                      <LoadableImage
+                        src={getImageContentUrl(image.id)}
+                        alt=""
+                        width={40}
+                        height={40}
+                        sizes="40px"
+                        unoptimized
+                        className="size-full object-cover"
+                      />
+                    </ImageViewer>
+                    <div className="min-w-0">
+                      <p
+                        className="truncate font-medium"
+                        title={image.user_filename}
+                      >
+                        {image.user_filename}
+                      </p>
+                      <p className="mt-0.5 truncate text-xs text-muted-foreground sm:hidden">
+                        {formatFileSize(image.size_bytes)}
+                        <span aria-hidden="true"> · </span>
+                        <time dateTime={image.created_at}>
+                          {formatDate(image.created_at)}
+                        </time>
+                      </p>
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell className="hidden w-32 px-3 py-2.5 text-muted-foreground md:table-cell">
+                  <time dateTime={image.created_at}>
+                    {formatDate(image.created_at)}
+                  </time>
+                </TableCell>
+                <TableCell className="hidden w-24 px-3 py-2.5 text-muted-foreground sm:table-cell">
+                  {formatFileSize(image.size_bytes)}
+                </TableCell>
+                <TableCell className="w-14 py-2.5 pr-4 text-right">
+                  <ImageActions
+                    imageId={image.id}
+                    userFilename={image.user_filename}
+                  />
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
 export function LibraryTable({ images }: LibraryTableProps) {
   const router = useRouter();
   const { getToken } = useAuth();
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [storedSelectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [query, setQuery] = useState("");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
+  const [view, setView] = useState<LibraryView>("grid");
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const selectedIds = useMemo(() => {
     const validIds = new Set(images.map((image) => image.id));
-    setSelectedIds((prev) => {
-      const next = new Set([...prev].filter((id) => validIds.has(id)));
-      return next.size === prev.size ? prev : next;
+    return new Set([...storedSelectedIds].filter((id) => validIds.has(id)));
+  }, [images, storedSelectedIds]);
+
+  const visibleImages = useMemo(() => {
+    const normalizedQuery = query.trim().toLocaleLowerCase();
+    const filtered = normalizedQuery
+      ? images.filter((image) =>
+          image.user_filename.toLocaleLowerCase().includes(normalizedQuery),
+        )
+      : images;
+
+    return [...filtered].sort((a, b) => {
+      switch (sortOrder) {
+        case "oldest":
+          return Date.parse(a.created_at) - Date.parse(b.created_at);
+        case "name":
+          return a.user_filename.localeCompare(b.user_filename, undefined, {
+            numeric: true,
+            sensitivity: "base",
+          });
+        case "largest":
+          return b.size_bytes - a.size_bytes;
+        case "smallest":
+          return a.size_bytes - b.size_bytes;
+        case "newest":
+        default:
+          return Date.parse(b.created_at) - Date.parse(a.created_at);
+      }
     });
-  }, [images]);
+  }, [images, query, sortOrder]);
 
   const allSelected =
-    images.length > 0 && selectedIds.size === images.length;
-  const someSelected = selectedIds.size > 0 && !allSelected;
+    visibleImages.length > 0 &&
+    visibleImages.every((image) => selectedIds.has(image.id));
+  const someSelected =
+    !allSelected && visibleImages.some((image) => selectedIds.has(image.id));
+  const imageCountLabel = query.trim()
+    ? `${visibleImages.length} of ${images.length} ${
+        images.length === 1 ? "image" : "images"
+      }`
+    : `${images.length} ${images.length === 1 ? "image" : "images"}`;
 
   function toggleAll(checked: boolean) {
-    setSelectedIds(checked ? new Set(images.map((image) => image.id)) : new Set());
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+
+      for (const image of visibleImages) {
+        if (checked) next.add(image.id);
+        else next.delete(image.id);
+      }
+
+      return next;
+    });
   }
 
   function toggleOne(id: string, checked: boolean) {
@@ -118,7 +412,9 @@ export function LibraryTable({ images }: LibraryTableProps) {
       );
 
       const succeeded = results.filter((r) => r.status === "fulfilled").length;
-      const failed = results.length - succeeded;
+      const failedIds = ids.filter(
+        (_, index) => results[index].status === "rejected",
+      );
 
       if (succeeded > 0) {
         toast.success(
@@ -126,17 +422,19 @@ export function LibraryTable({ images }: LibraryTableProps) {
             ? "Image deleted"
             : `${succeeded} images deleted`,
         );
-        clearSelection();
-        setIsDeleteOpen(false);
         router.refresh();
       }
 
-      if (failed > 0) {
+      if (failedIds.length > 0) {
+        setSelectedIds(new Set(failedIds));
         setDeleteError(
-          failed === 1
+          failedIds.length === 1
             ? "One image could not be deleted. Try again."
-            : `${failed} images could not be deleted. Try again.`,
+            : `${failedIds.length} images could not be deleted. Try again.`,
         );
+      } else {
+        clearSelection();
+        setIsDeleteOpen(false);
       }
     } finally {
       setIsDeleting(false);
@@ -145,15 +443,29 @@ export function LibraryTable({ images }: LibraryTableProps) {
 
   return (
     <>
-      <div className="mb-3 flex min-h-8 items-center justify-between gap-4">
-        {selectedIds.size > 0 ? (
-          <>
+      <div className="mb-4 flex flex-col gap-3">
+        <div className="flex min-h-8 flex-wrap items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2">
+            {view === "grid" && visibleImages.length > 0 && (
+              <Checkbox
+                checked={allSelected}
+                indeterminate={someSelected}
+                onCheckedChange={toggleAll}
+                aria-label="Select all visible images"
+              />
+            )}
             <h2
               id="library-heading"
               className="text-sm font-medium text-muted-foreground"
+              aria-live="polite"
             >
-              {selectedIds.size} selected
+              {selectedIds.size > 0
+                ? `${selectedIds.size} selected`
+                : imageCountLabel}
             </h2>
+          </div>
+
+          {selectedIds.size > 0 ? (
             <div className="flex shrink-0 items-center gap-2">
               <Button
                 type="button"
@@ -183,119 +495,136 @@ export function LibraryTable({ images }: LibraryTableProps) {
                 <XIcon />
               </Button>
             </div>
-          </>
-        ) : (
-          <>
-            <h2
-              id="library-heading"
-              className="text-sm font-medium text-muted-foreground"
-            >
-              {images.length} {images.length === 1 ? "image" : "images"}
-            </h2>
+          ) : (
             <UploadButton />
-          </>
-        )}
-      </div>
+          )}
+        </div>
 
-      <div className="overflow-hidden rounded-lg border bg-background">
-        <Table className="table-fixed">
-          <TableCaption className="sr-only">
-            Images in your library
-          </TableCaption>
-          <TableHeader className="bg-muted/30">
-            <TableRow>
-              <TableHead className="h-11 w-10 pr-0 pl-4">
-                <Checkbox
-                  checked={allSelected}
-                  indeterminate={someSelected}
-                  onCheckedChange={toggleAll}
-                  aria-label="Select all images"
-                />
-              </TableHead>
-              <TableHead className="h-11 pr-3 pl-3">Name</TableHead>
-              <TableHead className="hidden h-11 w-32 px-3 md:table-cell">
-                Uploaded
-              </TableHead>
-              <TableHead className="hidden h-11 w-24 px-3 sm:table-cell">
-                File size
-              </TableHead>
-              <TableHead className="h-11 w-14 pr-4">
-                <span className="sr-only">Actions</span>
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {images.map((image) => {
-              const isSelected = selectedIds.has(image.id);
-
-              return (
-                <TableRow
-                  key={image.id}
-                  data-state={isSelected ? "selected" : undefined}
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <InputGroup className="sm:max-w-sm">
+            <InputGroupInput
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search by filename…"
+              aria-label="Search images by filename"
+              className="[&::-webkit-search-cancel-button]:hidden"
+            />
+            <InputGroupAddon>
+              <SearchIcon aria-hidden="true" />
+            </InputGroupAddon>
+            {query && (
+              <InputGroupAddon align="inline-end">
+                <InputGroupButton
+                  size="icon-xs"
+                  onClick={() => setQuery("")}
+                  aria-label="Clear search"
                 >
-                  <TableCell className="w-10 py-2.5 pr-0 pl-4">
-                    <Checkbox
-                      checked={isSelected}
-                      onCheckedChange={(checked) =>
-                        toggleOne(image.id, checked)
-                      }
-                      aria-label={`Select ${image.user_filename}`}
-                    />
-                  </TableCell>
-                  <TableCell className="min-w-0 py-2.5 pr-3 pl-3">
-                    <div className="flex min-w-0 items-center gap-3">
-                      <ImageViewer
-                        imageId={image.id}
-                        userFilename={image.user_filename}
-                        triggerClassName="relative size-10 shrink-0 overflow-hidden rounded-lg bg-muted ring-1 ring-foreground/10"
-                      >
-                        <Image
-                          src={getImageContentUrl(image.id)}
-                          alt=""
-                          width={40}
-                          height={40}
-                          sizes="40px"
-                          unoptimized
-                          className="size-full object-cover"
-                        />
-                      </ImageViewer>
-                      <div className="min-w-0">
-                        <p
-                          className="truncate font-medium"
-                          title={image.user_filename}
-                        >
-                          {image.user_filename}
-                        </p>
-                        <p className="mt-0.5 truncate text-xs text-muted-foreground sm:hidden">
-                          {formatFileSize(image.size_bytes)}
-                          <span aria-hidden="true"> · </span>
-                          <time dateTime={image.created_at}>
-                            {formatDate(image.created_at)}
-                          </time>
-                        </p>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="hidden w-32 px-3 py-2.5 text-muted-foreground md:table-cell">
-                    <time dateTime={image.created_at}>
-                      {formatDate(image.created_at)}
-                    </time>
-                  </TableCell>
-                  <TableCell className="hidden w-24 px-3 py-2.5 text-muted-foreground sm:table-cell">
-                    {formatFileSize(image.size_bytes)}
-                  </TableCell>
-                  <TableCell className="w-14 py-2.5 pr-4 text-right">
-                    <ImageActions
-                      imageId={image.id}
-                      userFilename={image.user_filename}
-                    />
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+                  <XIcon />
+                </InputGroupButton>
+              </InputGroupAddon>
+            )}
+          </InputGroup>
+
+          <div className="flex items-center justify-between gap-2 sm:justify-end">
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button type="button" variant="outline" size="sm" />
+                }
+              >
+                <ArrowUpDownIcon data-icon="inline-start" />
+                {SORT_LABELS[sortOrder]}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel>Sort by</DropdownMenuLabel>
+                  <DropdownMenuRadioGroup
+                    value={sortOrder}
+                    onValueChange={(value) =>
+                      setSortOrder(value as SortOrder)
+                    }
+                  >
+                    {Object.entries(SORT_LABELS).map(([value, label]) => (
+                      <DropdownMenuRadioItem key={value} value={value}>
+                        {label}
+                      </DropdownMenuRadioItem>
+                    ))}
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <ToggleGroup
+              value={[view]}
+              onValueChange={(values) => {
+                const nextView = values[0];
+                if (nextView === "grid" || nextView === "list") {
+                  setView(nextView);
+                }
+              }}
+              variant="outline"
+              size="sm"
+              spacing={0}
+              aria-label="Library view"
+            >
+              <ToggleGroupItem
+                value="grid"
+                aria-label="Grid view"
+                title="Grid view"
+              >
+                <Grid2X2Icon />
+              </ToggleGroupItem>
+              <ToggleGroupItem
+                value="list"
+                aria-label="List view"
+                title="List view"
+              >
+                <ListIcon />
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
+        </div>
       </div>
+
+      {visibleImages.length === 0 ? (
+        <Empty className="min-h-72 border bg-card">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <SearchIcon />
+            </EmptyMedia>
+            <EmptyTitle>No matching images</EmptyTitle>
+            <EmptyDescription>
+              Try a different filename or clear your search.
+            </EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setQuery("")}
+            >
+              Clear search
+            </Button>
+          </EmptyContent>
+        </Empty>
+      ) : view === "grid" ? (
+        <ImageGrid
+          images={visibleImages}
+          selectedIds={selectedIds}
+          onSelect={toggleOne}
+        />
+      ) : (
+        <ImageList
+          images={visibleImages}
+          selectedIds={selectedIds}
+          allSelected={allSelected}
+          someSelected={someSelected}
+          onSelect={toggleOne}
+          onSelectAll={toggleAll}
+        />
+      )}
 
       <AlertDialog open={isDeleteOpen} onOpenChange={handleDeleteOpenChange}>
         <AlertDialogContent>

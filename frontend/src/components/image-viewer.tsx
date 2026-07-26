@@ -1,17 +1,23 @@
 "use client";
 
 import type { ReactNode } from "react";
-import Image from "next/image";
+import { DownloadIcon, XIcon } from "lucide-react";
 
+import { LoadableImage } from "@/components/loadable-image";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { getImageContentUrl } from "@/lib/api/images.client";
+import {
+  getImageContentUrl,
+  getImageDownloadUrl,
+} from "@/lib/api/images.client";
 import { cn } from "@/lib/utils";
 
 type ImageViewerProps = {
@@ -41,23 +47,53 @@ export function ImageViewer({
       >
         {children}
       </DialogTrigger>
-      <DialogContent className="flex h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden p-0 sm:h-[min(90dvh,56rem)] sm:max-w-6xl">
-        <DialogHeader className="min-w-0 shrink-0 px-4 py-3 pr-12">
-          <DialogTitle className="truncate" title={userFilename}>
-            {userFilename}
-          </DialogTitle>
-          <DialogDescription className="sr-only">
-            Full-size preview of {userFilename}
-          </DialogDescription>
+      <DialogContent
+        showCloseButton={false}
+        className="flex h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden p-0 sm:h-[min(90dvh,56rem)] sm:max-w-6xl"
+      >
+        <DialogHeader className="flex-row items-center gap-4 border-b px-5 py-4">
+          <div className="min-w-0 flex-1">
+            <DialogTitle className="truncate leading-snug" title={userFilename}>
+              {userFilename}
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              Full-size preview of {userFilename}
+            </DialogDescription>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <a
+              href={getImageDownloadUrl(imageId)}
+              download={userFilename}
+              className={buttonVariants({ variant: "outline", size: "sm" })}
+            >
+              <DownloadIcon data-icon="inline-start" />
+              Download
+            </a>
+            <DialogClose
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label="Close preview"
+                />
+              }
+            >
+              <XIcon />
+            </DialogClose>
+          </div>
         </DialogHeader>
-        <div className="relative min-h-0 flex-1 bg-muted/30">
-          <Image
+        <div className="relative min-h-0 flex-1 bg-muted/40">
+          <LoadableImage
             src={contentUrl}
             alt={userFilename}
             fill
             sizes="(max-width: 640px) calc(100vw - 2rem), 72rem"
             unoptimized
-            className="object-contain p-2 sm:p-4"
+            className="object-contain p-4 sm:p-8"
+            skeletonClassName="inset-4 rounded-xl sm:inset-8"
+            showErrorMessage
+            errorMessage="Full-size preview unavailable"
           />
         </div>
       </DialogContent>
