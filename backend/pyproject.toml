@@ -1,7 +1,7 @@
 [project]
 name = "sentinel"
 version = "0.1.0"
-description = "An AI-powered multimodal intelligence platform for searching, analysing, and reasoning over documents and images."
+description = "An AI-powered visual intelligence platform for searching, analysing, and reasoning over images."
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
