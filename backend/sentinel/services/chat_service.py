@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import HTTPException
 from google.genai import types
 
@@ -7,7 +9,7 @@ from sentinel.models.image import ImageResponse
 from sentinel.services.image_service import ImageService
 
 MAX_AGENT_STEPS = 3
-SEARCH_TOOL_LABEL = "Searched image library"
+SEARCH_TOOL_LABEL = "Searched your library"
 
 
 class ChatService:
@@ -21,13 +23,19 @@ class ChatService:
         history: list[ChatMessage],
         user_id: str,
         tool: ToolId | None = None,
+        image_ids: list[UUID] | None = None,
     ) -> ChatResponse:
+        images = [
+            self.image_service.read_content(image_id, user_id)
+            for image_id in image_ids or []
+        ]
         contents = self.chat_client.build_contents(
             message,
             history=[(item.role, item.text) for item in history],
+            images=images,
         )
 
-        if tool == "search":
+        if tool == "search" and not images:
             return self._search_and_summarize(
                 contents,
                 query=message.strip(),

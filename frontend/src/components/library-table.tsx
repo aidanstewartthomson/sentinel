@@ -132,8 +132,8 @@ export function LibraryTable({ images }: LibraryTableProps) {
       if (failed > 0) {
         setDeleteError(
           failed === 1
-            ? "One image could not be deleted. Please try again."
-            : `${failed} images could not be deleted. Please try again.`,
+            ? "One image could not be deleted. Try again."
+            : `${failed} images could not be deleted. Try again.`,
         );
       }
     } finally {
@@ -198,7 +198,7 @@ export function LibraryTable({ images }: LibraryTableProps) {
       <div className="overflow-hidden rounded-lg border bg-background">
         <Table className="table-fixed">
           <TableCaption className="sr-only">
-            Images in your Sentinel library
+            Images in your library
           </TableCaption>
           <TableHeader className="bg-muted/30">
             <TableRow>

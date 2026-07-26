@@ -9,18 +9,27 @@ import {
 } from "react";
 import { useAuth } from "@clerk/nextjs";
 import Image from "next/image";
-import { ArrowUpIcon, PlusIcon, SearchIcon, XIcon } from "lucide-react";
+import {
+  ArrowUpIcon,
+  CheckIcon,
+  PlusIcon,
+  SearchIcon,
+  XIcon,
+} from "lucide-react";
+import { toast } from "sonner";
 
 import {
   Attachment,
+  AttachmentAction,
+  AttachmentActions,
   AttachmentContent,
-  AttachmentDescription,
   AttachmentGroup,
   AttachmentMedia,
   AttachmentTitle,
   AttachmentTrigger,
 } from "@/components/ui/attachment";
 import { Bubble, BubbleContent } from "@/components/ui/bubble";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -54,7 +63,7 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { sendChatMessage } from "@/lib/api/chat.client";
 import type { ImageMetadata } from "@/lib/types/image";
-import { cn, formatFileSize, formatFileType } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 type ToolId = "search";
 
@@ -62,10 +71,13 @@ type ChatMessage = {
   id: string;
   role: "user" | "assistant";
   text: string;
+  attachments?: ImageMetadata[];
   results?: ImageMetadata[];
   toolLabel?: string;
   isError?: boolean;
 };
+
+const MAX_SELECTED_IMAGES = 8;
 
 const tools = [
   {
@@ -75,50 +87,158 @@ const tools = [
   },
 ] as const;
 
-function ResultAttachments({ results }: { results: ImageMetadata[] }) {
+function ResultAttachments({
+  results,
+  selectedImageIds,
+  isBusy,
+  onToggleImage,
+}: {
+  results: ImageMetadata[];
+  selectedImageIds: ReadonlySet<string>;
+  isBusy: boolean;
+  onToggleImage: (image: ImageMetadata) => void;
+}) {
+  const selectionLimitReached =
+    selectedImageIds.size >= MAX_SELECTED_IMAGES;
+
   return (
-    <AttachmentGroup className="w-full" aria-label="Sentinel results">
-      {results.map((image) => (
-        <Attachment key={image.id} orientation="vertical" className="w-36">
+    <div className="flex w-full flex-col gap-1.5">
+      <p className="text-xs text-muted-foreground">
+        Select up to {MAX_SELECTED_IMAGES} to analyse.
+      </p>
+      <AttachmentGroup className="w-full" aria-label="Sentinel results">
+        {results.map((image) => {
+          const isSelected = selectedImageIds.has(image.id);
+          const isSelectionDisabled =
+            isBusy || (selectionLimitReached && !isSelected);
+
+          return (
+            <Attachment
+              key={image.id}
+              orientation="vertical"
+              className="w-36"
+              data-selected={isSelected}
+              data-disabled={isSelectionDisabled}
+            >
+              <AttachmentMedia variant="image">
+                <Image
+                  src={`/api/images/${encodeURIComponent(image.id)}/content`}
+                  alt=""
+                  width={144}
+                  height={144}
+                  sizes="144px"
+                  unoptimized
+                  className="size-full object-cover"
+                />
+              </AttachmentMedia>
+              <AttachmentContent className="w-full">
+                <AttachmentTitle title={image.user_filename}>
+                  {image.user_filename}
+                </AttachmentTitle>
+              </AttachmentContent>
+              <AttachmentActions className="pointer-events-none">
+                <AttachmentAction
+                  type="button"
+                  variant={isSelected ? "default" : "secondary"}
+                  tabIndex={-1}
+                  aria-hidden="true"
+                >
+                  {isSelected ? <CheckIcon /> : <PlusIcon />}
+                </AttachmentAction>
+              </AttachmentActions>
+              <AttachmentTrigger
+                disabled={isSelectionDisabled}
+                aria-label={
+                  isSelected
+                    ? `Remove ${image.user_filename} from analysis`
+                    : `Select ${image.user_filename} for analysis`
+                }
+                aria-pressed={isSelected}
+                onClick={() => onToggleImage(image)}
+              />
+            </Attachment>
+          );
+        })}
+      </AttachmentGroup>
+    </div>
+  );
+}
+
+function CompactImageAttachments({
+  images,
+  label,
+  isBusy = false,
+  onRemoveImage,
+}: {
+  images: ImageMetadata[];
+  label: string;
+  isBusy?: boolean;
+  onRemoveImage?: (imageId: string) => void;
+}) {
+  return (
+    <AttachmentGroup className="w-full" aria-label={label}>
+      {images.map((image) => (
+        <Attachment key={image.id} size="sm" className="max-w-52">
           <AttachmentMedia variant="image">
             <Image
               src={`/api/images/${encodeURIComponent(image.id)}/content`}
               alt=""
-              width={144}
-              height={144}
-              sizes="144px"
+              width={32}
+              height={32}
+              sizes="32px"
               unoptimized
               className="size-full object-cover"
             />
           </AttachmentMedia>
-          <AttachmentContent className="w-full">
+          <AttachmentContent>
             <AttachmentTitle title={image.user_filename}>
               {image.user_filename}
             </AttachmentTitle>
-            <AttachmentDescription>
-              {formatFileType(image.user_filename)} ·{" "}
-              {formatFileSize(image.size_bytes)}
-            </AttachmentDescription>
           </AttachmentContent>
-          <AttachmentTrigger
-            render={
-              <a
-                href={`/api/images/${encodeURIComponent(image.id)}/content`}
-                target="_blank"
-                rel="noreferrer"
-                aria-label={`Open ${image.user_filename}`}
-              />
-            }
-          />
+          {onRemoveImage && (
+            <AttachmentActions>
+              <AttachmentAction
+                type="button"
+                disabled={isBusy}
+                aria-label={`Remove ${image.user_filename} from analysis`}
+                onClick={() => onRemoveImage(image.id)}
+              >
+                <XIcon />
+              </AttachmentAction>
+            </AttachmentActions>
+          )}
+          {!onRemoveImage && (
+            <AttachmentTrigger
+              render={
+                <a
+                  href={`/api/images/${encodeURIComponent(image.id)}/content`}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={`Open ${image.user_filename}`}
+                />
+              }
+            />
+          )}
         </Attachment>
       ))}
     </AttachmentGroup>
   );
 }
 
-function TranscriptMessage({ message }: { message: ChatMessage }) {
+function TranscriptMessage({
+  message,
+  selectedImageIds,
+  isBusy,
+  onToggleImage,
+}: {
+  message: ChatMessage;
+  selectedImageIds: ReadonlySet<string>;
+  isBusy: boolean;
+  onToggleImage: (image: ImageMetadata) => void;
+}) {
   const isUser = message.role === "user";
   const resultCount = message.results?.length ?? 0;
+  const attachmentCount = message.attachments?.length ?? 0;
 
   return (
     <MessageScrollerItem messageId={message.id} scrollAnchor={isUser}>
@@ -143,8 +263,19 @@ function TranscriptMessage({ message }: { message: ChatMessage }) {
                 {message.text}
               </BubbleContent>
             </Bubble>
+            {attachmentCount > 0 && (
+              <CompactImageAttachments
+                images={message.attachments ?? []}
+                label="Images sent for analysis"
+              />
+            )}
             {resultCount > 0 && (
-              <ResultAttachments results={message.results ?? []} />
+              <ResultAttachments
+                results={message.results ?? []}
+                selectedImageIds={selectedImageIds}
+                isBusy={isBusy}
+                onToggleImage={onToggleImage}
+              />
             )}
           </MessageContent>
         </Message>
@@ -159,7 +290,9 @@ function SentinelWelcome() {
       <EmptyTitle className="text-2xl tracking-tight">
         How can Sentinel help?
       </EmptyTitle>
-      <EmptyDescription>Ask about the images you work with.</EmptyDescription>
+      <EmptyDescription>
+        Search your library, then select images to analyse.
+      </EmptyDescription>
     </EmptyHeader>
   );
 }
@@ -169,20 +302,26 @@ function ChatComposer({
   isBusy,
   prompt,
   selectedTool,
+  selectedImages,
   onPromptChange,
   onPromptKeyDown,
   onSelectTool,
   onClearTool,
+  onClearImages,
+  onRemoveImage,
   onSubmit,
 }: {
   promptRef: RefObject<HTMLTextAreaElement | null>;
   isBusy: boolean;
   prompt: string;
   selectedTool: ToolId | null;
+  selectedImages: ImageMetadata[];
   onPromptChange: (value: string) => void;
   onPromptKeyDown: (event: KeyboardEvent<HTMLTextAreaElement>) => void;
   onSelectTool: (tool: ToolId) => void;
   onClearTool: () => void;
+  onClearImages: () => void;
+  onRemoveImage: (imageId: string) => void;
   onSubmit: () => void;
 }) {
   const selected = tools.find((tool) => tool.id === selectedTool);
@@ -211,6 +350,36 @@ function ChatComposer({
           <FieldLabel htmlFor="sentinel-prompt" className="sr-only">
             Ask Sentinel
           </FieldLabel>
+          {selectedImages.length > 0 && (
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-medium">Selected images</p>
+                <div className="flex items-center gap-1">
+                  <p
+                    className="text-xs text-muted-foreground"
+                    aria-live="polite"
+                  >
+                    {selectedImages.length}/{MAX_SELECTED_IMAGES}
+                  </p>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="xs"
+                    disabled={isBusy}
+                    onClick={onClearImages}
+                  >
+                    Clear all
+                  </Button>
+                </div>
+              </div>
+              <CompactImageAttachments
+                images={selectedImages}
+                label="Selected images for analysis"
+                isBusy={isBusy}
+                onRemoveImage={onRemoveImage}
+              />
+            </div>
+          )}
           <InputGroup>
             <InputGroupTextarea
               ref={promptRef}
@@ -221,7 +390,9 @@ function ChatComposer({
               placeholder={
                 selected
                   ? `Describe what to ${selected.label.toLowerCase()}…`
-                  : "Ask Sentinel"
+                  : selectedImages.length
+                    ? "Ask about the selected images…"
+                    : "Ask Sentinel"
               }
               className="max-h-40 min-h-12 px-3 py-3"
             />
@@ -279,7 +450,7 @@ function ChatComposer({
                 size="icon-sm"
                 disabled={!canSend}
                 className="ml-auto"
-                aria-label={isBusy ? "Sentinel is working" : "Send message"}
+                aria-label={isBusy ? "Working on that" : "Send message"}
               >
                 {isBusy ? <Spinner /> : <ArrowUpIcon />}
               </InputGroupButton>
@@ -298,18 +469,58 @@ export function ChatInterface() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [prompt, setPrompt] = useState("");
   const [selectedTool, setSelectedTool] = useState<ToolId | null>(null);
+  const [selectedImages, setSelectedImages] = useState<ImageMetadata[]>([]);
   const [pendingMessageId, setPendingMessageId] = useState<string | null>(null);
   const isWorking = pendingMessageId !== null;
   const pendingStatus =
     selectedTool === "search"
-      ? "Searching image library…"
-      : "Sentinel is working…";
+      ? "Searching your library…"
+      : selectedImages.length
+        ? `Analysing ${selectedImages.length} selected ${
+            selectedImages.length === 1 ? "image" : "images"
+          }…`
+        : "Working on that…";
+
+  function handleToggleImage(image: ImageMetadata) {
+    if (isWorking) return;
+
+    if (selectedImages.some((item) => item.id === image.id)) {
+      setSelectedImages((current) =>
+        current.filter((item) => item.id !== image.id),
+      );
+      return;
+    }
+
+    if (selectedImages.length >= MAX_SELECTED_IMAGES) {
+      toast.info(`You can select up to ${MAX_SELECTED_IMAGES}.`);
+      return;
+    }
+
+    setSelectedTool(null);
+    setSelectedImages((current) => {
+      if (
+        current.length >= MAX_SELECTED_IMAGES ||
+        current.some((item) => item.id === image.id)
+      ) {
+        return current;
+      }
+
+      return [...current, image];
+    });
+  }
+
+  function handleRemoveImage(imageId: string) {
+    setSelectedImages((current) =>
+      current.filter((image) => image.id !== imageId),
+    );
+  }
 
   async function handleSubmit() {
     const message = prompt.trim();
     if (!message || requestInFlight.current) return;
 
     const tool = tools.find((item) => item.id === selectedTool);
+    const attachedImages = selectedImages;
     const turnId = crypto.randomUUID();
 
     requestInFlight.current = true;
@@ -319,6 +530,7 @@ export function ChatInterface() {
         id: `${turnId}-user`,
         role: "user",
         text: message,
+        attachments: attachedImages.length ? attachedImages : undefined,
       },
     ]);
     setPrompt("");
@@ -334,6 +546,7 @@ export function ChatInterface() {
         history,
         getToken,
         tool?.id,
+        attachedImages.map((image) => image.id),
       );
       setMessages((current) => [
         ...current,
@@ -345,13 +558,14 @@ export function ChatInterface() {
           toolLabel: tool_label ?? undefined,
         },
       ]);
+      setSelectedImages([]);
     } catch {
       setMessages((current) => [
         ...current,
         {
           id: `${turnId}-assistant`,
           role: "assistant",
-          text: "I couldn’t complete that request. Try again.",
+          text: "Something went wrong. Try again.",
           isError: true,
         },
       ]);
@@ -370,6 +584,7 @@ export function ChatInterface() {
   }
 
   const isEmpty = messages.length === 0;
+  const selectedImageIds = new Set(selectedImages.map((image) => image.id));
 
   return (
     <section
@@ -390,7 +605,13 @@ export function ChatInterface() {
                     className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6"
                   >
                     {messages.map((message) => (
-                      <TranscriptMessage key={message.id} message={message} />
+                      <TranscriptMessage
+                        key={message.id}
+                        message={message}
+                        selectedImageIds={selectedImageIds}
+                        isBusy={isWorking}
+                        onToggleImage={handleToggleImage}
+                      />
                     ))}
                     {pendingMessageId && (
                       <MessageScrollerItem messageId={pendingMessageId}>
@@ -425,10 +646,13 @@ export function ChatInterface() {
                 isBusy={isWorking}
                 prompt={prompt}
                 selectedTool={selectedTool}
+                selectedImages={selectedImages}
                 onPromptChange={setPrompt}
                 onPromptKeyDown={handlePromptKeyDown}
                 onSelectTool={setSelectedTool}
                 onClearTool={() => setSelectedTool(null)}
+                onClearImages={() => setSelectedImages([])}
+                onRemoveImage={handleRemoveImage}
                 onSubmit={() => {
                   void handleSubmit();
                 }}

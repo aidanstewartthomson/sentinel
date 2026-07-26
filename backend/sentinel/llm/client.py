@@ -6,6 +6,9 @@ from sentinel.core.config import settings
 SYSTEM_INSTRUCTION = (
     "You are Sentinel, an AI assistant in an image intelligence product. "
     "Be helpful and concise. Answer general questions normally. "
+    "When images are attached to the latest message, analyse those images "
+    "directly and ground your answer in what is visible. Do not search for "
+    "other images unless the user asks you to. "
     "When the user wants to find, look up, or show images from their library, "
     "call the search_images tool. After searching, reply in one or two short "
     "sentences that reflect the query and what turned up. If nothing matched, "
@@ -18,7 +21,7 @@ SEARCH_IMAGES_TOOL = types.Tool(
         types.FunctionDeclaration(
             name="search_images",
             description=(
-                "Search the user's image library with a natural-language query. "
+                "Search the user's library with a natural-language query. "
                 "Use when the user wants to find or show images."
             ),
             parameters_json_schema={
@@ -65,6 +68,7 @@ class ChatClient:
     def build_contents(
         message: str,
         history: list[tuple[str, str]] | None = None,
+        images: list[tuple[bytes, str]] | None = None,
     ) -> list[types.Content]:
         contents: list[types.Content] = []
 
@@ -76,8 +80,12 @@ class ChatClient:
                 )
             )
 
-        contents.append(
-            types.Content(role="user", parts=[types.Part.from_text(text=message)])
-        )
+        message_parts = [
+            types.Part.from_bytes(data=data, mime_type=mime_type)
+            for data, mime_type in images or []
+        ]
+        message_parts.append(types.Part.from_text(text=message))
+
+        contents.append(types.Content(role="user", parts=message_parts))
 
         return contents

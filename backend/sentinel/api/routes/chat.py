@@ -21,4 +21,5 @@ def chat(user_id: CurrentUserId, request: ChatRequest) -> ChatResponse:
         request.history,
         user_id,
         tool=request.tool,
+        image_ids=request.image_ids,
     )

@@ -6,7 +6,7 @@ export default function Loading() {
       <div
         className="mx-auto flex w-full max-w-7xl min-w-0 flex-1 flex-col gap-6 p-4 md:p-6 lg:px-8 lg:py-8"
         aria-busy="true"
-        aria-label="Loading image library"
+        aria-label="Loading your library"
         role="status"
       >
         <div className="flex flex-col gap-2">

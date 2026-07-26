@@ -103,7 +103,7 @@ export function ImageActions({
       });
       router.refresh();
     } catch {
-      setError("The image could not be renamed. Please try again.");
+      setError("The image could not be renamed. Try again.");
     } finally {
       setIsRenaming(false);
     }
@@ -121,7 +121,7 @@ export function ImageActions({
       });
       router.refresh();
     } catch {
-      setDeleteError("The image could not be deleted. Please try again.");
+      setDeleteError("The image could not be deleted. Try again.");
     } finally {
       setIsDeleting(false);
     }

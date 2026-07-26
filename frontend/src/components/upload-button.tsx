@@ -47,7 +47,7 @@ export function UploadButton() {
         toast.error(
           failed === 1 ? "Upload failed" : `${failed} uploads failed`,
           {
-            description: "Please try again.",
+            description: "Try again.",
           },
         );
       }

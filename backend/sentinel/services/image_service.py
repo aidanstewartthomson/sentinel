@@ -60,6 +60,11 @@ class ImageService:
         return ImageResponse.from_record(record)
 
     def get_content(self, image_id: UUID, user_id: str) -> Response:
+        contents, content_type = self.read_content(image_id, user_id)
+
+        return Response(content=contents, media_type=content_type)
+
+    def read_content(self, image_id: UUID, user_id: str) -> tuple[bytes, str]:
         record = self.metadata_store.get(image_id, user_id)
 
         if record is None:
@@ -70,7 +75,7 @@ class ImageService:
         if contents is None:
             raise HTTPException(status_code=404, detail="Image not found")
 
-        return Response(content=contents, media_type=record.content_type)
+        return contents, record.content_type
 
     def list(self, user_id: str) -> list[ImageResponse]:
         return [

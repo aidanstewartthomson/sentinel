@@ -19,6 +19,7 @@ export async function sendChatMessage(
   history: ChatHistoryMessage[],
   getToken: GetToken,
   tool?: ChatToolId | null,
+  imageIds: string[] = [],
 ): Promise<ChatReply> {
   const response = await fetch("/api/chat", {
     method: "POST",
@@ -30,6 +31,7 @@ export async function sendChatMessage(
       message,
       history,
       ...(tool ? { tool } : {}),
+      ...(imageIds.length ? { image_ids: imageIds } : {}),
     }),
   });
 

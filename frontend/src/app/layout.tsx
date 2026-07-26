@@ -20,7 +20,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Sentinel",
-  description: "AI-powered visual intelligence platform",
+  description:
+    "AI-powered platform for searching, analysing, and reasoning over images",
 };
 
 export default function RootLayout({

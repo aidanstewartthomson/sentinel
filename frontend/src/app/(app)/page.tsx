@@ -38,7 +38,7 @@ export default async function Home() {
                   <h2 id="library-heading">No images yet</h2>
                 </EmptyTitle>
                 <EmptyDescription>
-                  Upload an image to make it searchable in Sentinel.
+                  Upload images to search and analyse them in chat.
                 </EmptyDescription>
               </EmptyHeader>
               <EmptyContent>
