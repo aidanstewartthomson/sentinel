@@ -5,6 +5,10 @@ export function getImageContentUrl(imageId: string): string {
   return `/api/images/${encodeURIComponent(imageId)}/content`;
 }
 
+export function getImageThumbnailUrl(imageId: string): string {
+  return `/api/images/${encodeURIComponent(imageId)}/thumbnail`;
+}
+
 export function getImageDownloadUrl(imageId: string): string {
   return `/api/images/${encodeURIComponent(imageId)}/download`;
 }

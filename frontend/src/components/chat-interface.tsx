@@ -18,7 +18,11 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { ImageViewer } from "@/components/image-viewer";
+import {
+  ImageViewer,
+  ImageViewerTrigger,
+  type ViewerImage,
+} from "@/components/image-viewer";
 import {
   Attachment,
   AttachmentAction,
@@ -63,7 +67,7 @@ import {
 } from "@/components/ui/message-scroller";
 import { Spinner } from "@/components/ui/spinner";
 import { sendChatMessage } from "@/lib/api/chat.client";
-import { getImageContentUrl } from "@/lib/api/images.client";
+import { getImageThumbnailUrl } from "@/lib/api/images.client";
 import type { ImageMetadata } from "@/lib/types/image";
 import { cn } from "@/lib/utils";
 
@@ -94,11 +98,13 @@ function ResultAttachments({
   selectedImageIds,
   isBusy,
   onToggleImage,
+  onViewImage,
 }: {
   results: ImageMetadata[];
   selectedImageIds: ReadonlySet<string>;
   isBusy: boolean;
   onToggleImage: (image: ImageMetadata) => void;
+  onViewImage: (image: ViewerImage) => void;
 }) {
   const selectionLimitReached =
     selectedImageIds.size >= MAX_SELECTED_IMAGES;
@@ -123,13 +129,18 @@ function ResultAttachments({
               data-disabled={isSelectionDisabled}
             >
               <AttachmentMedia variant="image">
-                <ImageViewer
-                  imageId={image.id}
+                <ImageViewerTrigger
                   userFilename={image.user_filename}
-                  triggerClassName="relative z-20 size-full rounded-[inherit]"
+                  onOpen={() =>
+                    onViewImage({
+                      id: image.id,
+                      userFilename: image.user_filename,
+                    })
+                  }
+                  className="relative z-20 size-full rounded-[inherit]"
                 >
                   <Image
-                    src={getImageContentUrl(image.id)}
+                    src={getImageThumbnailUrl(image.id)}
                     alt=""
                     width={144}
                     height={144}
@@ -137,7 +148,7 @@ function ResultAttachments({
                     unoptimized
                     className="size-full object-cover"
                   />
-                </ImageViewer>
+                </ImageViewerTrigger>
               </AttachmentMedia>
               <AttachmentContent className="w-full">
                 <AttachmentTitle title={image.user_filename}>
@@ -183,24 +194,31 @@ function CompactImageAttachments({
   label,
   isBusy = false,
   onRemoveImage,
+  onViewImage,
 }: {
   images: ImageMetadata[];
   label: string;
   isBusy?: boolean;
   onRemoveImage?: (imageId: string) => void;
+  onViewImage: (image: ViewerImage) => void;
 }) {
   return (
     <AttachmentGroup className="w-full" aria-label={label}>
       {images.map((image) => (
         <Attachment key={image.id} size="sm" className="max-w-52">
           <AttachmentMedia variant="image">
-            <ImageViewer
-              imageId={image.id}
+            <ImageViewerTrigger
               userFilename={image.user_filename}
-              triggerClassName="relative z-20 size-full rounded-[inherit]"
+              onOpen={() =>
+                onViewImage({
+                  id: image.id,
+                  userFilename: image.user_filename,
+                })
+              }
+              className="relative z-20 size-full rounded-[inherit]"
             >
               <Image
-                src={getImageContentUrl(image.id)}
+                src={getImageThumbnailUrl(image.id)}
                 alt=""
                 width={32}
                 height={32}
@@ -208,7 +226,7 @@ function CompactImageAttachments({
                 unoptimized
                 className="size-full object-cover"
               />
-            </ImageViewer>
+            </ImageViewerTrigger>
           </AttachmentMedia>
           <AttachmentContent>
             <AttachmentTitle title={image.user_filename}>
@@ -238,11 +256,13 @@ function TranscriptMessage({
   selectedImageIds,
   isBusy,
   onToggleImage,
+  onViewImage,
 }: {
   message: ChatMessage;
   selectedImageIds: ReadonlySet<string>;
   isBusy: boolean;
   onToggleImage: (image: ImageMetadata) => void;
+  onViewImage: (image: ViewerImage) => void;
 }) {
   const isUser = message.role === "user";
   const resultCount = message.results?.length ?? 0;
@@ -275,6 +295,7 @@ function TranscriptMessage({
               <CompactImageAttachments
                 images={message.attachments ?? []}
                 label="Images sent for analysis"
+                onViewImage={onViewImage}
               />
             )}
             {resultCount > 0 && (
@@ -283,6 +304,7 @@ function TranscriptMessage({
                 selectedImageIds={selectedImageIds}
                 isBusy={isBusy}
                 onToggleImage={onToggleImage}
+                onViewImage={onViewImage}
               />
             )}
           </MessageContent>
@@ -317,6 +339,7 @@ function ChatComposer({
   onClearTool,
   onClearImages,
   onRemoveImage,
+  onViewImage,
   onSubmit,
 }: {
   promptRef: RefObject<HTMLTextAreaElement | null>;
@@ -330,6 +353,7 @@ function ChatComposer({
   onClearTool: () => void;
   onClearImages: () => void;
   onRemoveImage: (imageId: string) => void;
+  onViewImage: (image: ViewerImage) => void;
   onSubmit: () => void;
 }) {
   const selected = tools.find((tool) => tool.id === selectedTool);
@@ -385,6 +409,7 @@ function ChatComposer({
                 label="Selected images for analysis"
                 isBusy={isBusy}
                 onRemoveImage={onRemoveImage}
+                onViewImage={onViewImage}
               />
             </div>
           )}
@@ -479,6 +504,7 @@ export function ChatInterface() {
   const [selectedTool, setSelectedTool] = useState<ToolId | null>(null);
   const [selectedImages, setSelectedImages] = useState<ImageMetadata[]>([]);
   const [pendingMessageId, setPendingMessageId] = useState<string | null>(null);
+  const [viewerImage, setViewerImage] = useState<ViewerImage | null>(null);
   const isWorking = pendingMessageId !== null;
   const pendingStatus =
     selectedTool === "search"
@@ -619,6 +645,7 @@ export function ChatInterface() {
                         selectedImageIds={selectedImageIds}
                         isBusy={isWorking}
                         onToggleImage={handleToggleImage}
+                        onViewImage={setViewerImage}
                       />
                     ))}
                     {pendingMessageId && (
@@ -661,6 +688,7 @@ export function ChatInterface() {
                 onClearTool={() => setSelectedTool(null)}
                 onClearImages={() => setSelectedImages([])}
                 onRemoveImage={handleRemoveImage}
+                onViewImage={setViewerImage}
                 onSubmit={() => {
                   void handleSubmit();
                 }}
@@ -670,6 +698,13 @@ export function ChatInterface() {
           <div className="h-6 shrink-0" aria-hidden="true" />
         </div>
       </MessageScrollerProvider>
+      <ImageViewer
+        image={viewerImage}
+        open={viewerImage !== null}
+        onOpenChange={(open) => {
+          if (!open) setViewerImage(null);
+        }}
+      />
     </section>
   );
 }

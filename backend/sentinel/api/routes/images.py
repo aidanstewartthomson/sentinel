@@ -63,6 +63,11 @@ def get_image_content(user_id: CurrentUserId, image_id: UUID) -> Response:
     return image_service.get_content(image_id, user_id)
 
 
+@router.get("/{image_id}/thumbnail")
+def get_image_thumbnail(user_id: CurrentUserId, image_id: UUID) -> Response:
+    return image_service.get_thumbnail(image_id, user_id)
+
+
 @router.get("/{image_id}/download")
 def download_image(user_id: CurrentUserId, image_id: UUID) -> Response:
     return image_service.download(image_id, user_id)

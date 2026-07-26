@@ -5,10 +5,11 @@ type RouteContext = {
   params: Promise<{ imageId: string }>;
 };
 
-async function proxyImage(
-  imageId: string,
-  suffix: "content" | "download",
+export async function GET(
+  _request: Request,
+  context: RouteContext,
 ): Promise<Response> {
+  const { imageId } = await context.params;
   const { getToken } = await auth();
   const token = await getToken();
   if (!token) {
@@ -16,7 +17,7 @@ async function proxyImage(
   }
 
   const response = await fetch(
-    `${process.env.BACKEND_URL}/images/${encodeURIComponent(imageId)}/${suffix}`,
+    `${process.env.BACKEND_URL}/images/${encodeURIComponent(imageId)}/thumbnail`,
     {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -34,22 +35,12 @@ async function proxyImage(
 
   const headers = new Headers();
   const contentType = response.headers.get("content-type");
-  const contentDisposition = response.headers.get("content-disposition");
   const cacheControl = response.headers.get("cache-control");
   if (contentType) headers.set("content-type", contentType);
-  if (contentDisposition) headers.set("content-disposition", contentDisposition);
   if (cacheControl) headers.set("cache-control", cacheControl);
 
   return new NextResponse(response.body, {
     status: response.status,
     headers,
   });
-}
-
-export async function GET(
-  _request: Request,
-  context: RouteContext,
-): Promise<Response> {
-  const { imageId } = await context.params;
-  return proxyImage(imageId, "content");
 }

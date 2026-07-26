@@ -15,8 +15,17 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { ImageActions } from "@/components/image-actions";
-import { ImageViewer } from "@/components/image-viewer";
+import {
+  ImageActionsMenu,
+  ImageDeleteDialog,
+  ImageRenameDialog,
+  type ActionImage,
+} from "@/components/image-actions";
+import {
+  ImageViewer,
+  ImageViewerTrigger,
+  type ViewerImage,
+} from "@/components/image-viewer";
 import { LoadableImage } from "@/components/loadable-image";
 import { UploadButton } from "@/components/upload-button";
 import {
@@ -76,8 +85,8 @@ import {
 } from "@/components/ui/toggle-group";
 import {
   deleteImage,
-  getImageContentUrl,
   getImageDownloadUrl,
+  getImageThumbnailUrl,
 } from "@/lib/api/images.client";
 import type { ImageMetadata } from "@/lib/types/image";
 import {
@@ -91,6 +100,9 @@ type LibraryTableProps = {
 };
 
 type LibraryView = "grid" | "list";
+
+/** Three rows at xl:grid-cols-5 — above-the-fold thumbs load eagerly. */
+const ABOVE_FOLD_THUMBNAILS = 15;
 
 type SortOrder = "newest" | "oldest" | "name" | "largest" | "smallest";
 
@@ -106,53 +118,70 @@ type ImageCollectionProps = {
   images: ImageMetadata[];
   selectedIds: Set<string>;
   onSelect: (id: string, checked: boolean) => void;
+  onViewImage: (image: ViewerImage) => void;
+  onRenameImage: (image: ActionImage) => void;
+  onDeleteImage: (image: ActionImage) => void;
 };
+
+function toActionImage(image: ImageMetadata): ActionImage {
+  return { id: image.id, userFilename: image.user_filename };
+}
+
+function toViewerImage(image: ImageMetadata): ViewerImage {
+  return { id: image.id, userFilename: image.user_filename };
+}
 
 function ImageGrid({
   images,
   selectedIds,
   onSelect,
+  onViewImage,
+  onRenameImage,
+  onDeleteImage,
 }: ImageCollectionProps) {
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
       {images.map((image, index) => {
         const isSelected = selectedIds.has(image.id);
+        const actionImage = toActionImage(image);
 
         return (
           <Card
             key={image.id}
             size="sm"
             data-state={isSelected ? "selected" : undefined}
-            className="gap-0 pt-0 pb-0 transition-shadow data-[state=selected]:ring-2 data-[state=selected]:ring-ring"
+            className="gap-0 pt-0 pb-0 [content-visibility:auto] [contain-intrinsic-size:auto_280px] data-[state=selected]:ring-2 data-[state=selected]:ring-ring"
           >
             <CardContent className="relative aspect-square px-0">
-              <ImageViewer
-                imageId={image.id}
+              <ImageViewerTrigger
                 userFilename={image.user_filename}
-                triggerClassName="relative block size-full overflow-hidden bg-muted"
+                onOpen={() => onViewImage(toViewerImage(image))}
+                className="relative block size-full overflow-hidden bg-muted"
               >
                 <LoadableImage
-                  src={getImageContentUrl(image.id)}
+                  src={getImageThumbnailUrl(image.id)}
                   alt=""
                   fill
                   sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-                  loading={index === 0 ? "eager" : "lazy"}
+                  priority={index < ABOVE_FOLD_THUMBNAILS}
+                  loading={index < ABOVE_FOLD_THUMBNAILS ? "eager" : "lazy"}
                   unoptimized
                   className="object-cover"
                 />
-              </ImageViewer>
+              </ImageViewerTrigger>
               <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-2 p-2.5">
-                <div className="pointer-events-auto rounded-md bg-background/90 p-1 shadow-sm supports-backdrop-filter:backdrop-blur-sm">
+                <div className="pointer-events-auto rounded-md bg-background/90 p-1 shadow-sm">
                   <Checkbox
                     checked={isSelected}
                     onCheckedChange={(checked) => onSelect(image.id, checked)}
                     aria-label={`Select ${image.user_filename}`}
                   />
                 </div>
-                <div className="pointer-events-auto rounded-md bg-background/90 shadow-sm supports-backdrop-filter:backdrop-blur-sm">
-                  <ImageActions
-                    imageId={image.id}
-                    userFilename={image.user_filename}
+                <div className="pointer-events-auto rounded-md bg-background/90 shadow-sm">
+                  <ImageActionsMenu
+                    image={actionImage}
+                    onRename={() => onRenameImage(actionImage)}
+                    onDelete={() => onDeleteImage(actionImage)}
                   />
                 </div>
               </div>
@@ -194,6 +223,9 @@ function ImageList({
   someSelected,
   onSelect,
   onSelectAll,
+  onViewImage,
+  onRenameImage,
+  onDeleteImage,
 }: ImageListProps) {
   return (
     <div className="overflow-hidden rounded-lg border bg-background">
@@ -224,13 +256,15 @@ function ImageList({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {images.map((image) => {
+          {images.map((image, index) => {
             const isSelected = selectedIds.has(image.id);
+            const actionImage = toActionImage(image);
 
             return (
               <TableRow
                 key={image.id}
                 data-state={isSelected ? "selected" : undefined}
+                className="[content-visibility:auto] [contain-intrinsic-size:auto_3.5rem]"
               >
                 <TableCell className="w-10 py-2.5 pr-0 pl-4">
                   <Checkbox
@@ -243,21 +277,23 @@ function ImageList({
                 </TableCell>
                 <TableCell className="min-w-0 py-2.5 pr-3 pl-3">
                   <div className="flex min-w-0 items-center gap-3">
-                    <ImageViewer
-                      imageId={image.id}
+                    <ImageViewerTrigger
                       userFilename={image.user_filename}
-                      triggerClassName="relative size-10 shrink-0 overflow-hidden rounded-lg bg-muted ring-1 ring-foreground/10"
+                      onOpen={() => onViewImage(toViewerImage(image))}
+                      className="relative size-10 shrink-0 overflow-hidden rounded-lg bg-muted ring-1 ring-foreground/10"
                     >
                       <LoadableImage
-                        src={getImageContentUrl(image.id)}
+                        src={getImageThumbnailUrl(image.id)}
                         alt=""
                         width={40}
                         height={40}
                         sizes="40px"
+                        priority={index === 0}
+                        loading={index < ABOVE_FOLD_THUMBNAILS ? "eager" : "lazy"}
                         unoptimized
                         className="size-full object-cover"
                       />
-                    </ImageViewer>
+                    </ImageViewerTrigger>
                     <div className="min-w-0">
                       <p
                         className="truncate font-medium"
@@ -284,9 +320,10 @@ function ImageList({
                   {formatFileSize(image.size_bytes)}
                 </TableCell>
                 <TableCell className="w-14 py-2.5 pr-4 text-right">
-                  <ImageActions
-                    imageId={image.id}
-                    userFilename={image.user_filename}
+                  <ImageActionsMenu
+                    image={actionImage}
+                    onRename={() => onRenameImage(actionImage)}
+                    onDelete={() => onDeleteImage(actionImage)}
                   />
                 </TableCell>
               </TableRow>
@@ -308,6 +345,10 @@ export function LibraryTable({ images }: LibraryTableProps) {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [viewerImage, setViewerImage] = useState<ViewerImage | null>(null);
+  const [renameImage, setRenameImage] = useState<ActionImage | null>(null);
+  const [deleteImageTarget, setDeleteImageTarget] =
+    useState<ActionImage | null>(null);
 
   const selectedIds = useMemo(() => {
     const validIds = new Set(images.map((image) => image.id));
@@ -614,6 +655,9 @@ export function LibraryTable({ images }: LibraryTableProps) {
           images={visibleImages}
           selectedIds={selectedIds}
           onSelect={toggleOne}
+          onViewImage={setViewerImage}
+          onRenameImage={setRenameImage}
+          onDeleteImage={setDeleteImageTarget}
         />
       ) : (
         <ImageList
@@ -623,8 +667,33 @@ export function LibraryTable({ images }: LibraryTableProps) {
           someSelected={someSelected}
           onSelect={toggleOne}
           onSelectAll={toggleAll}
+          onViewImage={setViewerImage}
+          onRenameImage={setRenameImage}
+          onDeleteImage={setDeleteImageTarget}
         />
       )}
+
+      <ImageViewer
+        image={viewerImage}
+        open={viewerImage !== null}
+        onOpenChange={(open) => {
+          if (!open) setViewerImage(null);
+        }}
+      />
+      <ImageRenameDialog
+        image={renameImage}
+        open={renameImage !== null}
+        onOpenChange={(open) => {
+          if (!open) setRenameImage(null);
+        }}
+      />
+      <ImageDeleteDialog
+        image={deleteImageTarget}
+        open={deleteImageTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteImageTarget(null);
+        }}
+      />
 
       <AlertDialog open={isDeleteOpen} onOpenChange={handleDeleteOpenChange}>
         <AlertDialogContent>

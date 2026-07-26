@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@clerk/nextjs";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   DownloadIcon,
@@ -47,44 +47,88 @@ import {
   renameImage,
 } from "@/lib/api/images.client";
 
-type ImageActionsProps = {
-  imageId: string;
+export type ActionImage = {
+  id: string;
   userFilename: string;
 };
 
-export function ImageActions({
-  imageId,
-  userFilename,
-}: ImageActionsProps) {
+type ImageActionsMenuProps = {
+  image: ActionImage;
+  onRename: () => void;
+  onDelete: () => void;
+};
+
+export function ImageActionsMenu({
+  image,
+  onRename,
+  onDelete,
+}: ImageActionsMenuProps) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={`Actions for ${image.userFilename}`}
+          />
+        }
+      >
+        <EllipsisIcon />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-36">
+        <DropdownMenuItem onClick={onRename}>
+          <PencilIcon />
+          Rename
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          render={
+            <a
+              href={getImageDownloadUrl(image.id)}
+              download={image.userFilename}
+            />
+          }
+        >
+          <DownloadIcon />
+          Download
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem variant="destructive" onClick={onDelete}>
+          <Trash2Icon />
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+type ImageRenameDialogProps = {
+  image: ActionImage | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+};
+
+export function ImageRenameDialog({
+  image,
+  open,
+  onOpenChange,
+}: ImageRenameDialogProps) {
   const router = useRouter();
   const { getToken } = useAuth();
-  const [isRenameOpen, setIsRenameOpen] = useState(false);
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [filename, setFilename] = useState(userFilename);
+  const [filename, setFilename] = useState("");
   const [isRenaming, setIsRenaming] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  function handleOpenChange(open: boolean) {
-    if (open) {
-      setFilename(userFilename);
+  useEffect(() => {
+    if (open && image) {
+      setFilename(image.userFilename);
       setError(null);
     }
-
-    setIsRenameOpen(open);
-  }
-
-  function handleDeleteOpenChange(open: boolean) {
-    if (open) {
-      setDeleteError(null);
-    }
-
-    setIsDeleteOpen(open);
-  }
+  }, [open, image]);
 
   async function handleRename(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!image) return;
 
     const nextFilename = filename.trim();
     if (!nextFilename) {
@@ -96,10 +140,10 @@ export function ImageActions({
     setError(null);
 
     try {
-      await renameImage(imageId, nextFilename, getToken);
-      setIsRenameOpen(false);
+      await renameImage(image.id, nextFilename, getToken);
+      onOpenChange(false);
       toast.success("Image renamed", {
-        description: `“${userFilename}” was renamed to “${nextFilename}”.`,
+        description: `“${image.userFilename}” was renamed to “${nextFilename}”.`,
       });
       router.refresh();
     } catch {
@@ -109,69 +153,14 @@ export function ImageActions({
     }
   }
 
-  async function handleDelete() {
-    setIsDeleting(true);
-    setDeleteError(null);
-
-    try {
-      await deleteImage(imageId, getToken);
-      setIsDeleteOpen(false);
-      toast.success("Image deleted", {
-        description: `${userFilename} was removed from your library.`,
-      });
-      router.refresh();
-    } catch {
-      setDeleteError("The image could not be deleted. Try again.");
-    } finally {
-      setIsDeleting(false);
-    }
-  }
-
   const canRename =
-    filename.trim().length > 0 && filename.trim() !== userFilename;
+    Boolean(image) &&
+    filename.trim().length > 0 &&
+    filename.trim() !== image?.userFilename;
 
   return (
-    <>
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              aria-label={`Actions for ${userFilename}`}
-            />
-          }
-        >
-          <EllipsisIcon />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-36">
-          <DropdownMenuItem onClick={() => setIsRenameOpen(true)}>
-            <PencilIcon />
-            Rename
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            render={
-              <a
-                href={getImageDownloadUrl(imageId)}
-                download={userFilename}
-              />
-            }
-          >
-            <DownloadIcon />
-            Download
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            variant="destructive"
-            onClick={() => setIsDeleteOpen(true)}
-          >
-            <Trash2Icon />
-            Delete
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <Dialog open={isRenameOpen} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {open && image ? (
         <DialogContent>
           <form onSubmit={handleRename} className="contents">
             <DialogHeader>
@@ -183,15 +172,15 @@ export function ImageActions({
 
             <div className="grid gap-4">
               <div className="grid gap-3">
-                <Label htmlFor={`filename-${imageId}`}>New filename</Label>
+                <Label htmlFor="shared-rename-filename">New filename</Label>
                 <Input
-                  id={`filename-${imageId}`}
+                  id="shared-rename-filename"
                   name="filename"
                   value={filename}
                   onChange={(event) => setFilename(event.target.value)}
                   aria-invalid={Boolean(error)}
                   aria-describedby={
-                    error ? `filename-error-${imageId}` : undefined
+                    error ? "shared-rename-filename-error" : undefined
                   }
                   autoComplete="off"
                   autoFocus
@@ -199,7 +188,7 @@ export function ImageActions({
                 />
                 {error && (
                   <p
-                    id={`filename-error-${imageId}`}
+                    id="shared-rename-filename-error"
                     className="text-sm text-destructive"
                     role="alert"
                   >
@@ -228,15 +217,60 @@ export function ImageActions({
             </DialogFooter>
           </form>
         </DialogContent>
-      </Dialog>
+      ) : null}
+    </Dialog>
+  );
+}
 
-      <AlertDialog open={isDeleteOpen} onOpenChange={handleDeleteOpenChange}>
+type ImageDeleteDialogProps = {
+  image: ActionImage | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+};
+
+export function ImageDeleteDialog({
+  image,
+  open,
+  onOpenChange,
+}: ImageDeleteDialogProps) {
+  const router = useRouter();
+  const { getToken } = useAuth();
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (open) setDeleteError(null);
+  }, [open]);
+
+  async function handleDelete() {
+    if (!image) return;
+
+    setIsDeleting(true);
+    setDeleteError(null);
+
+    try {
+      await deleteImage(image.id, getToken);
+      onOpenChange(false);
+      toast.success("Image deleted", {
+        description: `${image.userFilename} was removed from your library.`,
+      });
+      router.refresh();
+    } catch {
+      setDeleteError("The image could not be deleted. Try again.");
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      {open && image ? (
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this image?</AlertDialogTitle>
             <AlertDialogDescription>
               <span className="font-medium text-foreground">
-                “{userFilename}”
+                “{image.userFilename}”
               </span>{" "}
               will be permanently removed from your library. This can&apos;t be
               undone.
@@ -250,9 +284,7 @@ export function ImageActions({
           )}
 
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>
-              Cancel
-            </AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               type="button"
               variant="destructive"
@@ -269,7 +301,7 @@ export function ImageActions({
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
-      </AlertDialog>
-    </>
+      ) : null}
+    </AlertDialog>
   );
 }

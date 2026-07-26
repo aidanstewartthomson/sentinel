@@ -8,11 +8,13 @@ from fastapi.responses import Response
 from sentinel.core.config import settings
 from sentinel.database.models.image import ImageRecord
 from sentinel.embeddings.client import EmbeddingClient
+from sentinel.images.thumbnails import make_thumbnail, thumbnail_filename
 from sentinel.models.image import ImageResponse
 from sentinel.storage.file_store import FileStore
 from sentinel.storage.metadata_store import MetadataStore
 
 DEFAULT_IMAGE_CONTENT_TYPE = "application/octet-stream"
+CACHE_CONTROL = "private, max-age=86400"
 
 
 class ImageService:
@@ -34,6 +36,7 @@ class ImageService:
         content_type = image.content_type or DEFAULT_IMAGE_CONTENT_TYPE
 
         contents = self.file_store.save(image, filename=stored_filename)
+        self._store_thumbnail(image_id, contents)
         embedding = self.embedding_client.embed_image(contents, content_type)
 
         record = ImageRecord(
@@ -62,7 +65,43 @@ class ImageService:
     def get_content(self, image_id: UUID, user_id: str) -> Response:
         contents, content_type = self.read_content(image_id, user_id)
 
-        return Response(content=contents, media_type=content_type)
+        return Response(
+            content=contents,
+            media_type=content_type,
+            headers={"Cache-Control": CACHE_CONTROL},
+        )
+
+    def get_thumbnail(self, image_id: UUID, user_id: str) -> Response:
+        record = self.metadata_store.get(image_id, user_id)
+
+        if record is None:
+            raise HTTPException(status_code=404, detail="Image not found")
+
+        thumb_name = thumbnail_filename(image_id)
+        thumb_bytes = self.file_store.read(thumb_name)
+
+        if thumb_bytes is None:
+            original = self.file_store.read(record.stored_filename)
+            if original is None:
+                raise HTTPException(status_code=404, detail="Image not found")
+
+            generated = self._store_thumbnail(image_id, original)
+            if generated is None:
+                # Fall back to original if we can't thumbnail it
+                return Response(
+                    content=original,
+                    media_type=record.content_type,
+                    headers={"Cache-Control": CACHE_CONTROL},
+                )
+            thumb_bytes, content_type = generated
+        else:
+            content_type = "image/webp"
+
+        return Response(
+            content=thumb_bytes,
+            media_type=content_type,
+            headers={"Cache-Control": CACHE_CONTROL},
+        )
 
     def read_content(self, image_id: UUID, user_id: str) -> tuple[bytes, str]:
         record = self.metadata_store.get(image_id, user_id)
@@ -98,6 +137,7 @@ class ImageService:
             raise HTTPException(status_code=404, detail="Image not found")
 
         self.file_store.delete(record.stored_filename)
+        self.file_store.delete(thumbnail_filename(image_id))
 
         return ImageResponse.from_record(record)
 
@@ -131,3 +171,18 @@ class ImageService:
         )
 
         return [ImageResponse.from_record(record) for record in records]
+
+    def _store_thumbnail(
+        self, image_id: UUID, contents: bytes
+    ) -> tuple[bytes, str] | None:
+        result = make_thumbnail(contents)
+        if result is None:
+            return None
+
+        thumb_bytes, content_type = result
+        self.file_store.write(
+            thumbnail_filename(image_id),
+            thumb_bytes,
+            content_type,
+        )
+        return thumb_bytes, content_type

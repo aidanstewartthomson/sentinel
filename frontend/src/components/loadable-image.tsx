@@ -54,7 +54,6 @@ export function LoadableImage({
           {...props}
           alt={alt}
           className={cn(
-            "transition-[opacity,transform] duration-200",
             status === "loaded" ? "opacity-100" : "opacity-0",
             className,
           )}

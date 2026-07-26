@@ -1,4 +1,5 @@
 from fastapi import UploadFile
+from google.api_core.exceptions import NotFound
 from google.cloud import storage
 
 
@@ -9,22 +10,25 @@ class FileStore:
     def save(self, file: UploadFile, filename: str) -> bytes:
         contents = file.file.read()
         content_type = file.content_type or "application/octet-stream"
+        self.write(filename, contents, content_type)
+        return contents
 
+    def write(self, filename: str, contents: bytes, content_type: str) -> None:
         blob = self.bucket.blob(filename)
         blob.upload_from_string(contents, content_type=content_type)
-
-        return contents
 
     def read(self, filename: str) -> bytes | None:
         blob = self.bucket.blob(filename)
 
-        if not blob.exists():
+        try:
+            return blob.download_as_bytes()
+        except NotFound:
             return None
-
-        return blob.download_as_bytes()
 
     def delete(self, filename: str) -> None:
         blob = self.bucket.blob(filename)
 
-        if blob.exists():
+        try:
             blob.delete()
+        except NotFound:
+            pass
