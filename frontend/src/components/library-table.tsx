@@ -13,6 +13,7 @@ import {
 import { toast } from "sonner";
 
 import { ImageActions } from "@/components/image-actions";
+import { ImageViewer } from "@/components/image-viewer";
 import { UploadButton } from "@/components/upload-button";
 import {
   AlertDialog,
@@ -37,6 +38,7 @@ import {
 } from "@/components/ui/table";
 import {
   deleteImage,
+  getImageContentUrl,
   getImageDownloadUrl,
 } from "@/lib/api/images.client";
 import type { ImageMetadata } from "@/lib/types/image";
@@ -242,9 +244,13 @@ export function LibraryTable({ images }: LibraryTableProps) {
                   </TableCell>
                   <TableCell className="min-w-0 py-2.5 pr-3 pl-3">
                     <div className="flex min-w-0 items-center gap-3">
-                      <div className="relative size-10 shrink-0 overflow-hidden rounded-lg bg-muted ring-1 ring-foreground/10">
+                      <ImageViewer
+                        imageId={image.id}
+                        userFilename={image.user_filename}
+                        triggerClassName="relative size-10 shrink-0 overflow-hidden rounded-lg bg-muted ring-1 ring-foreground/10"
+                      >
                         <Image
-                          src={`/api/images/${image.id}/content`}
+                          src={getImageContentUrl(image.id)}
                           alt=""
                           width={40}
                           height={40}
@@ -252,7 +258,7 @@ export function LibraryTable({ images }: LibraryTableProps) {
                           unoptimized
                           className="size-full object-cover"
                         />
-                      </div>
+                      </ImageViewer>
                       <div className="min-w-0">
                         <p
                           className="truncate font-medium"

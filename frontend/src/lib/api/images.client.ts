@@ -1,6 +1,10 @@
 import { ImageMetadata } from "../types/image";
 import { authHeaders, type GetToken } from "./auth.client";
 
+export function getImageContentUrl(imageId: string): string {
+  return `/api/images/${encodeURIComponent(imageId)}/content`;
+}
+
 export function getImageDownloadUrl(imageId: string): string {
   return `/api/images/${encodeURIComponent(imageId)}/download`;
 }

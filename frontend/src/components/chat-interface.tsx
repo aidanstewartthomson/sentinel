@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { ImageViewer } from "@/components/image-viewer";
 import {
   Attachment,
   AttachmentAction,
@@ -62,6 +63,7 @@ import {
 } from "@/components/ui/message-scroller";
 import { Spinner } from "@/components/ui/spinner";
 import { sendChatMessage } from "@/lib/api/chat.client";
+import { getImageContentUrl } from "@/lib/api/images.client";
 import type { ImageMetadata } from "@/lib/types/image";
 import { cn } from "@/lib/utils";
 
@@ -121,27 +123,39 @@ function ResultAttachments({
               data-disabled={isSelectionDisabled}
             >
               <AttachmentMedia variant="image">
-                <Image
-                  src={`/api/images/${encodeURIComponent(image.id)}/content`}
-                  alt=""
-                  width={144}
-                  height={144}
-                  sizes="144px"
-                  unoptimized
-                  className="size-full object-cover"
-                />
+                <ImageViewer
+                  imageId={image.id}
+                  userFilename={image.user_filename}
+                  triggerClassName="relative z-20 size-full rounded-[inherit]"
+                >
+                  <Image
+                    src={getImageContentUrl(image.id)}
+                    alt=""
+                    width={144}
+                    height={144}
+                    sizes="144px"
+                    unoptimized
+                    className="size-full object-cover"
+                  />
+                </ImageViewer>
               </AttachmentMedia>
               <AttachmentContent className="w-full">
                 <AttachmentTitle title={image.user_filename}>
                   {image.user_filename}
                 </AttachmentTitle>
               </AttachmentContent>
-              <AttachmentActions className="pointer-events-none">
+              <AttachmentActions>
                 <AttachmentAction
                   type="button"
                   variant={isSelected ? "default" : "secondary"}
-                  tabIndex={-1}
-                  aria-hidden="true"
+                  disabled={isSelectionDisabled}
+                  aria-label={
+                    isSelected
+                      ? `Remove ${image.user_filename} from analysis`
+                      : `Select ${image.user_filename} for analysis`
+                  }
+                  aria-pressed={isSelected}
+                  onClick={() => onToggleImage(image)}
                 >
                   {isSelected ? <CheckIcon /> : <PlusIcon />}
                 </AttachmentAction>
@@ -180,15 +194,21 @@ function CompactImageAttachments({
       {images.map((image) => (
         <Attachment key={image.id} size="sm" className="max-w-52">
           <AttachmentMedia variant="image">
-            <Image
-              src={`/api/images/${encodeURIComponent(image.id)}/content`}
-              alt=""
-              width={32}
-              height={32}
-              sizes="32px"
-              unoptimized
-              className="size-full object-cover"
-            />
+            <ImageViewer
+              imageId={image.id}
+              userFilename={image.user_filename}
+              triggerClassName="relative z-20 size-full rounded-[inherit]"
+            >
+              <Image
+                src={getImageContentUrl(image.id)}
+                alt=""
+                width={32}
+                height={32}
+                sizes="32px"
+                unoptimized
+                className="size-full object-cover"
+              />
+            </ImageViewer>
           </AttachmentMedia>
           <AttachmentContent>
             <AttachmentTitle title={image.user_filename}>
@@ -206,18 +226,6 @@ function CompactImageAttachments({
                 <XIcon />
               </AttachmentAction>
             </AttachmentActions>
-          )}
-          {!onRemoveImage && (
-            <AttachmentTrigger
-              render={
-                <a
-                  href={`/api/images/${encodeURIComponent(image.id)}/content`}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label={`Open ${image.user_filename}`}
-                />
-              }
-            />
           )}
         </Attachment>
       ))}
