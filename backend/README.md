@@ -1,6 +1,6 @@
 # Backend
 
-FastAPI service for Sentinel. Deployed on Cloud Run.
+FastAPI service for Sentinel. It was previously deployed on Cloud Run, but the hosted deployment is currently offline to avoid ongoing cloud costs.
 
 ```bash
 cp .env.example .env
